@@ -1,0 +1,34 @@
+name: imageio-campaign
+on:
+  workflow_dispatch:
+    inputs:
+      max_seconds:
+        description: 'Campaign duration in seconds'
+        default: '7200'
+jobs:
+  fuzz:
+    runs-on: macos-14
+    timeout-minutes: 200
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build harness
+        run: |
+          clang -fsanitize=fuzzer,address,undefined -g -O1 \
+            -framework CoreFoundation -framework CoreGraphics -framework ImageIO \
+            harness/imageio_fuzz.m -o imageio_fuzz
+          file imageio_fuzz
+      - name: Run campaign
+        run: |
+          mkdir -p findings
+          ./imageio_fuzz corpus -max_total_time=${{ inputs.max_seconds }} \
+            -rss_limit_mb=4096 -timeout=25 -print_final_stats=1 \
+            -artifact_prefix=findings/ 2>&1 | tee fuzz.log
+      - name: Save artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: findings
+          path: |
+            findings/
+            fuzz.log
+          retention-days: 30
