@@ -18,7 +18,7 @@ jobs:
           for x in /Applications/Xcode_16*.app /Applications/Xcode_15*.app; do
             [ -e "$x" ] || continue
             rd=$(DEVELOPER_DIR="$x" xcrun clang -print-resource-dir 2>/dev/null) || continue
-            if [ -f "$rd/lib/darwin/libclang_rt.fuzzer_osx.a" ]; then picked="$x"; echo "runtime at $rd/lib/darwin/"; break; fi
+            if [ -f "$rd/lib/darwin/libclang_rt.fuzzer_osx.a" ] || [ -f "$rd/lib/darwin/libclang_rt.fuzzer_macos.a" ]; then picked="$x"; ls "$rd/lib/darwin/" | grep fuzzer; break; fi
           done
           if [ -z "$picked" ]; then echo "No Xcode with fuzzer runtime found"; exit 1; fi
           echo "Picked $picked"
