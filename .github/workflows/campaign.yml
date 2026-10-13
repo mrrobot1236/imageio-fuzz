@@ -11,6 +11,18 @@ jobs:
     timeout-minutes: 200
     steps:
       - uses: actions/checkout@v4
+      - name: Select Xcode with libFuzzer runtime
+        run: |
+          ls /Applications | grep -i xcode || true
+          picked=""
+          for x in /Applications/Xcode_16*.app /Applications/Xcode_15*.app; do
+            [ -d "$x" ] || continue
+            if find "$x" -name 'libclang_rt.fuzzer_osx.a' 2>/dev/null | grep -q .; then picked="$x"; break; fi
+          done
+          if [ -z "$picked" ]; then echo "No Xcode with fuzzer runtime found"; exit 1; fi
+          echo "Picked $picked"
+          sudo xcode-select -s "$picked"
+          find "$picked" -name 'libclang_rt.fuzzer_osx.a' | head -2
       - name: Build harness
         run: |
           clang -fsanitize=fuzzer,address,undefined -g -O1 \
