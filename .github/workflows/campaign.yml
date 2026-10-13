@@ -11,24 +11,15 @@ jobs:
     timeout-minutes: 200
     steps:
       - uses: actions/checkout@v4
-      - name: Toolchain diagnostics
-        run: |
-          rd=$(clang -print-resource-dir); echo "DEFAULT rd: $rd"
-          ls "$rd/lib/darwin/" 2>/dev/null | head -60
-          echo "=== per-xcode ==="
-          for x in /Applications/Xcode_16*.app /Applications/Xcode_15*.app; do
-            [ -e "$x" ] || continue
-            rd2=$(DEVELOPER_DIR="$x" xcrun clang -print-resource-dir 2>/dev/null)
-            echo "$x -> $rd2"
-            ls "$rd2/lib/darwin/" 2>/dev/null | grep -i fuzzer | head -4
-          done
-          echo "=== brew llvm ==="
-          ls /opt/homebrew/opt/llvm/lib/clang/*/lib/darwin/ 2>/dev/null | grep -i fuzzer | head -6
-          find /opt/homebrew -name 'libclang_rt.fuzzer*' 2>/dev/null | head -5
-          echo "=== xcode-select ==="
-          xcode-select -p
-          clang --version | head -2
       - name: Build harness
+        run: |
+          CLANG=$(ls /opt/homebrew/opt/llvm@15/bin/clang /opt/homebrew/opt/llvm/bin/clang /opt/homebrew/bin/clang 2>/dev/null | head -1)
+          echo "clang: $CLANG"
+          $CLANG --version | head -2
+          $CLANG -fsanitize=fuzzer,address,undefined -g -O1 \
+            -framework CoreFoundation -framework CoreGraphics -framework ImageIO \
+            harness/imageio_fuzz.m -o imageio_fuzz
+          file imageio_fuzz
         run: |
           clang -fsanitize=fuzzer,address,undefined -g -O1 \
             -framework CoreFoundation -framework CoreGraphics -framework ImageIO \
