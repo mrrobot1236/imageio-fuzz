@@ -20,11 +20,6 @@ jobs:
             -framework CoreFoundation -framework CoreGraphics -framework ImageIO \
             harness/imageio_fuzz.m -o imageio_fuzz
           file imageio_fuzz
-        run: |
-          clang -fsanitize=fuzzer,address,undefined -g -O1 \
-            -framework CoreFoundation -framework CoreGraphics -framework ImageIO \
-            harness/imageio_fuzz.m -o imageio_fuzz
-          file imageio_fuzz
       - name: Run campaign
         run: |
           mkdir -p findings
