@@ -11,19 +11,23 @@ jobs:
     timeout-minutes: 200
     steps:
       - uses: actions/checkout@v4
-      - name: Select Xcode with libFuzzer runtime
+      - name: Toolchain diagnostics
         run: |
-          ls /Applications | grep -i xcode || true
-          picked=""
+          rd=$(clang -print-resource-dir); echo "DEFAULT rd: $rd"
+          ls "$rd/lib/darwin/" 2>/dev/null | head -60
+          echo "=== per-xcode ==="
           for x in /Applications/Xcode_16*.app /Applications/Xcode_15*.app; do
             [ -e "$x" ] || continue
-            rd=$(DEVELOPER_DIR="$x" xcrun clang -print-resource-dir 2>/dev/null) || continue
-            if [ -f "$rd/lib/darwin/libclang_rt.fuzzer_osx.a" ] || [ -f "$rd/lib/darwin/libclang_rt.fuzzer_macos.a" ]; then picked="$x"; ls "$rd/lib/darwin/" | grep fuzzer; break; fi
+            rd2=$(DEVELOPER_DIR="$x" xcrun clang -print-resource-dir 2>/dev/null)
+            echo "$x -> $rd2"
+            ls "$rd2/lib/darwin/" 2>/dev/null | grep -i fuzzer | head -4
           done
-          if [ -z "$picked" ]; then echo "No Xcode with fuzzer runtime found"; exit 1; fi
-          echo "Picked $picked"
-          sudo xcode-select -s "$picked"
-          clang --version | head -1
+          echo "=== brew llvm ==="
+          ls /opt/homebrew/opt/llvm/lib/clang/*/lib/darwin/ 2>/dev/null | grep -i fuzzer | head -6
+          find /opt/homebrew -name 'libclang_rt.fuzzer*' 2>/dev/null | head -5
+          echo "=== xcode-select ==="
+          xcode-select -p
+          clang --version | head -2
       - name: Build harness
         run: |
           clang -fsanitize=fuzzer,address,undefined -g -O1 \
