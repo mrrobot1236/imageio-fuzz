@@ -16,13 +16,14 @@ jobs:
           ls /Applications | grep -i xcode || true
           picked=""
           for x in /Applications/Xcode_16*.app /Applications/Xcode_15*.app; do
-            [ -d "$x" ] || continue
-            if find "$x" -name 'libclang_rt.fuzzer_osx.a' 2>/dev/null | grep -q .; then picked="$x"; break; fi
+            [ -e "$x" ] || continue
+            rd=$(DEVELOPER_DIR="$x" xcrun clang -print-resource-dir 2>/dev/null) || continue
+            if [ -f "$rd/lib/darwin/libclang_rt.fuzzer_osx.a" ]; then picked="$x"; echo "runtime at $rd/lib/darwin/"; break; fi
           done
           if [ -z "$picked" ]; then echo "No Xcode with fuzzer runtime found"; exit 1; fi
           echo "Picked $picked"
           sudo xcode-select -s "$picked"
-          find "$picked" -name 'libclang_rt.fuzzer_osx.a' | head -2
+          clang --version | head -1
       - name: Build harness
         run: |
           clang -fsanitize=fuzzer,address,undefined -g -O1 \
