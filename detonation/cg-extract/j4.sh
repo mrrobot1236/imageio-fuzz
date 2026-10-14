@@ -7,12 +7,12 @@ ls j1.pdf || { python3 -m venv venv; ./venv/bin/pip -q install fonttools; ./venv
 LL=( lldb -b \
   -o "breakpoint set -n aa_cache_render" \
   -o "process launch -- j1.pdf" \
-  -o "breakpoint set -a (uint64_t)aa_cache_render + 7472" \
-  -o "breakpoint set -a (uint64_t)aa_cache_render + 9584" \
-  -o "breakpoint set -a (uint64_t)aa_cache_render + 9616" \
-  -o "breakpoint set -a (uint64_t)aa_cache_render + 9632" \
+  -o "breakpoint set -a $pc+7472" \
+  -o "breakpoint set -a $pc+9584" \
+  -o "breakpoint set -a $pc+9616" \
+  -o "breakpoint set -a $pc+9632" \
   -o "breakpoint delete 1" )
-for i in $(seq 1 14); do
+for i in $(seq 1 40); do
   LL+=(-o "continue" -o "register read x9 x11 x13 x16 w12 w13 w14")
 done
 LL+=(-o "detach" -o "quit")
@@ -22,10 +22,10 @@ grep -cE "stop reason = breakpoint" j4_survive.txt || echo 0
 LC=( lldb -b \
   -o "breakpoint set -n aa_cache_render" \
   -o "process launch -- trigger.pdf" \
-  -o "breakpoint set -a (uint64_t)aa_cache_render + 7472" \
-  -o "breakpoint set -a (uint64_t)aa_cache_render + 9584" \
+  -o "breakpoint set -a $pc+7472" \
+  -o "breakpoint set -a $pc+9584" \
   -o "breakpoint delete 1" )
-for i in $(seq 1 10); do
+for i in $(seq 1 30); do
   LC+=(-o "continue" -o "register read x9 x11 x13 x16 w12 w13 w14")
 done
 LC+=(-o "detach" -o "quit")
