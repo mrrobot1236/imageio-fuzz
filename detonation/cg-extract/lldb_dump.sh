@@ -1,19 +1,20 @@
 #!/bin/bash
-# Catch the CVE-2026-86950 SIGSEGV under lldb and dump full context + function disassembly
+# v2: -k commands = executed exactly when the process crashes
 set -x
 cd detonation/cve-2026-86950
 clang -O2 -g -o render render.c -framework ImageIO -framework CoreGraphics -framework CoreFoundation
-lldb -b -o "settings set target.disable-aslr false" \
-  -o "process launch -- trigger.pdf" \
-  -o "thread backtrace" \
-  -o "register read" \
-  -o "disassemble --frame" \
-  -o "disassemble -n aa_cache_render" \
-  -o "disassemble -r '.*GlyphBitmapCreate.*'" \
-  -o "image lookup -va" \
+lldb -b \
+  -k "thread backtrace all" \
+  -k "register read" \
+  -k "disassemble --frame" \
+  -k "disassemble --frame --count 1600" \
+  -k "settings set target.disable-aslr true" \
+  -k "quit" \
+  -o "settings set target.disable-aslr true" \
+  -o "run -- trigger.pdf" \
   ./render > lldb_dump.txt 2>&1
-tail -30 lldb_dump.txt
-mkdir -p ../../findings 2>/dev/null; cd ../..
+wc -c lldb_dump.txt
+tail -5 lldb_dump.txt
+cd ../..
 mkdir -p findings
-cp detonation/cve-2026-86950/lldb_dump.txt findings/ 2>/dev/null || true
-ls -la findings/
+cp detonation/cve-2026-86950/lldb_dump.txt findings/
