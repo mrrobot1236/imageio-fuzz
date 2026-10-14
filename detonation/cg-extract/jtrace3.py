@@ -20,7 +20,7 @@ while hits < 900 and printed < 70:
     if st != 5:
         out("[j3] state=%d (exit/crash-done) hits=%d" % (st, hits)); break
     fr = th.GetSelectedFrame()
-    desc = p.GetStopDescription(200)
+    desc = th.GetStopDescription(200)
     off = fr.GetPCAddress().GetLoadAddress(t) - base
     def r(n):
         v = fr.FindRegister(n)
