@@ -11,7 +11,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-14, macos-15, macos-26]
+        os: [macos-14, macos-15, macos-26-arm64]
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
@@ -32,10 +32,11 @@ jobs:
       - name: Regenerate triggers (provenance)
         working-directory: detonation/cve-2026-86950
         run: |
-          pip3 install -q fonttools || true
+          python3 -m venv venv
+          ./venv/bin/pip install -q fonttools
           mkdir -p regen
-          python3 gen_font.py regen/trigger.ttf
-          python3 gen_pdf.py regen/trigger.pdf regen/trigger.ttf
+          ./venv/bin/python gen_font.py regen/trigger.ttf
+          ./venv/bin/python gen_pdf.py regen/trigger.pdf regen/trigger.ttf
           cmp -s trigger.ttf regen/trigger.ttf && echo "FONT REGEN: IDENTICAL" || echo "FONT REGEN: DIFFERS"
           cmp -s trigger.pdf regen/trigger.pdf && echo "PDF REGEN: IDENTICAL" || echo "PDF REGEN: DIFFERS"
 
