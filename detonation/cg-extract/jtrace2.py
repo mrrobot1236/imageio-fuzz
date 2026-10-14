@@ -1,5 +1,5 @@
 # lldb python v3: stopped at aa_cache_render entry. Trace write-path offsets; dump memory at fault.
-import os, struct, lldb
+import os, sys, struct, lldb
 t = lldb.debugger.GetSelectedTarget()
 p = t.GetProcess()
 th = p.GetSelectedThread()
@@ -44,3 +44,4 @@ while hits < 600 and printed < 80:
         break
     hits += 1
 print("[j2] done hits=%d printed=%d" % (hits, printed))
+sys.stdout.flush()

@@ -10,7 +10,7 @@ ls -la j1.pdf j1.ttf || exit 1
 JMODE=survive lldb -b \
   -o "breakpoint set -n aa_cache_render" \
   -o "process launch -- j1.pdf" \
-  -o "command script import ../cg-extract/jtrace2.py" \
+  -o "command script import $PWD/../cg-extract/jtrace2.py" \
   -o "detach" -o "quit" \
   ./render > j2_survive.txt 2>&1 || true
 grep -cE "\[hit" j2_survive.txt || echo 0
@@ -18,7 +18,7 @@ grep -cE "\[hit" j2_survive.txt || echo 0
 JMODE=crash lldb -b \
   -o "breakpoint set -n aa_cache_render" \
   -o "process launch -- trigger.pdf" \
-  -o "command script import ../cg-extract/jtrace2.py" \
+  -o "command script import $PWD/../cg-extract/jtrace2.py" \
   -o "detach" -o "quit" \
   ./render > j2_crash.txt 2>&1 || true
 tail -6 j2_crash.txt
