@@ -1,0 +1,65 @@
+name: cve-86950-detonation
+on:
+  workflow_dispatch:
+  push:
+    paths: ['detonation/**']
+
+jobs:
+  detonate:
+    runs-on: ${{ matrix.os }}
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-14, macos-15, macos-26]
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fingerprint OS + CoreGraphics
+        run: |
+          sw_vers || true
+          otool -L /System/Library/Frameworks/CoreGraphics.framework/CoreGraphics 2>/dev/null | head -4 || true
+          defaults read /System/Library/Frameworks/CoreGraphics.framework/Versions/A/Resources/Info.plist CFBundleVersion 2>/dev/null || true
+
+      - name: Build renderers (native + ASan)
+        working-directory: detonation/cve-2026-86950
+        run: |
+          clang -O2 -g -o render render.c -framework ImageIO -framework CoreGraphics -framework CoreFoundation
+          clang -O1 -g -fsanitize=address -o render_asan render.c -framework ImageIO -framework CoreGraphics -framework CoreFoundation
+          file render render_asan
+
+      - name: Regenerate triggers (provenance)
+        working-directory: detonation/cve-2026-86950
+        run: |
+          pip3 install -q fonttools || true
+          mkdir -p regen
+          python3 gen_font.py regen/trigger.ttf
+          python3 gen_pdf.py regen/trigger.pdf regen/trigger.ttf
+          cmp -s trigger.ttf regen/trigger.ttf && echo "FONT REGEN: IDENTICAL" || echo "FONT REGEN: DIFFERS"
+          cmp -s trigger.pdf regen/trigger.pdf && echo "PDF REGEN: IDENTICAL" || echo "PDF REGEN: DIFFERS"
+
+      - name: Detonate
+        working-directory: detonation/cve-2026-86950
+        run: |
+          mkdir -p findings
+          date > /tmp/det_start
+          {
+            echo "== native repo trigger ==";    ./render trigger.pdf;      echo "exit=$?"
+            echo "== native regen trigger ==";   ./render regen/trigger.pdf; echo "exit=$?"
+            echo "== asan repo trigger ==";      ./render_asan trigger.pdf;  echo "exit=$?"
+            echo "== asan regen trigger ==";     ./render_asan regen/trigger.pdf; echo "exit=$?"
+          } 2>&1 | tee findings/summary.txt
+          sleep 5
+          find ~/Library/Logs/DiagnosticReports -name "*.ips" -newer /tmp/det_start \
+            -exec cp {} findings/ \; 2>/dev/null || true
+          echo "--- crash reports collected ---"
+          ls -la findings/
+
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: detonation-${{ matrix.os }}
+          path: detonation/cve-2026-86950/findings/
+          retention-days: 30
