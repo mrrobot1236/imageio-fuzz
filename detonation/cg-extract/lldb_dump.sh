@@ -11,7 +11,7 @@ lldb -b \
   -k "settings set target.disable-aslr true" \
   -k "quit" \
   -o "settings set target.disable-aslr true" \
-  -o "run -- trigger.pdf" \
+  -o "process launch -- trigger.pdf" \
   ./render > lldb_dump.txt 2>&1
 wc -c lldb_dump.txt
 tail -5 lldb_dump.txt
