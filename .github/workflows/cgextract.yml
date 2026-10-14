@@ -12,8 +12,12 @@ jobs:
       - name: Extract CoreGraphics + ImageIO
         run: |
           mkdir -p findings
-          bash detonation/cg-extract/extract.sh || true
-          cp -f detonation_cgpack.tgz findings/cgpack.tgz || true
+          cd detonation/cg-extract
+          bash extract.sh || true
+          cd ../..
+          for f in detonation/cg-extract/xout/CoreGraphics detonation/cg-extract/xout/com.apple.CoreGraphics detonation/cg-extract/util.log; do
+            [ -f "$f" ] && cp -f "$f" findings/ || true
+          done
           ls -la findings/
       - uses: actions/upload-artifact@v4
         with:
