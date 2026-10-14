@@ -6,7 +6,7 @@ t = lldb.debugger.GetSelectedTarget()
 p = t.GetProcess()
 th = p.GetSelectedThread()
 fr = th.GetSelectedFrame()
-base = fr.GetFunction().GetStartAddress().GetLoadAddress(t)
+base = fr.GetPCAddress().GetLoadAddress(t)  # entry stop => pc == fn entry
 mode = os.environ.get('JMODE', 'survive')
 out("[j3] base=0x%x mode=%s" % (base, mode))
 WATCH = (1868, 1884, 2396, 2404, 2408)

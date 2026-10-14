@@ -2,7 +2,10 @@
 set -x
 cd detonation/cve-2026-86950
 clang -O2 -g -o render render.c -framework ImageIO -framework CoreGraphics -framework CoreFoundation
-[ -f j1.pdf ] || ./venv/bin/python gen_j1.py
+[ -x venv/bin/python ] || python3 -m venv venv
+./venv/bin/pip -q install fonttools
+./venv/bin/python gen_j1.py
+ls -la j1.pdf
 # B) groomed survivor: SBProcess.Continue() trace through write path
 JMODE=survive lldb -b \
   -o "breakpoint set -n aa_cache_render" \
