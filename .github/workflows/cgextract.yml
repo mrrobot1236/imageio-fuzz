@@ -11,7 +11,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Extract CoreGraphics + ImageIO
         run: |
-          bash detonation/cg-extract/j14.sh || true
+          bash detonation/cg-extract/j15.sh || true
       - uses: actions/upload-artifact@v4
         with:
           name: j2-write-trace
