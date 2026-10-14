@@ -1,16 +1,20 @@
 #!/bin/bash
-# Ship the runner's CoreGraphics + ImageIO binaries back for static RE (aa_cache_render store-path hunt)
-set -e
+# CoreGraphics/ImageIO live in the dyld shared cache on macOS 14+. Extract with dyld_shared_cache_util.
+set -x
 mkdir -p out
-CG=/System/Library/Frameworks/CoreGraphics.framework/CoreGraphics
-IIO=/System/Library/Frameworks/ImageIO.framework/ImageIO
 sw_vers > out/os.txt
-otool -l $CG | grep -A3 "LC_UUID" | head -8 >> out/os.txt || true
-cp $CG out/CoreGraphics; cp $IIO out/ImageIO
-# fat binary? thin to arm64e slice for analysis
-lipo -info out/CoreGraphics | tee out/lipo.txt
-otool -p _aa_cache_render -tV out/CoreGraphics > out/cg_disasm_stub.txt 2>/dev/null || true
-nm -gU out/CoreGraphics 2>/dev/null | grep -E "aa_|glyph|Glyph" > out/cg_syms.txt || true
-nm -gU out/ImageIO 2>/dev/null | grep -iE "pdf|thumbnail" > out/iio_syms.txt || true
-tar czf cgpack.tgz -C out . 
+CACHE="/System/Volumes/Preboot/Cryptexes/OS/System/Library/dyld/dyld_shared_cache_arm64e"
+[ -f "$CACHE" ] || CACHE=$(ls /System/Library/dyld/dyld_shared_cache_arm64e* 2>/dev/null | head -1)
+echo "cache=$CACHE" >> out/os.txt
+U=$(xcrun -f dyld_shared_cache_util 2>/dev/null || echo /Applications/Xcode_15.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/dyld_shared_cache_util)
+"$U" -extract "$PWD/out" "$CACHE" CoreGraphics ImageIO >> out/os.txt 2>&1 || \
+"$U" -extract "$PWD/out" "$CACHE" com.apple.CoreGraphics com.apple.ImageIO >> out/os.txt 2>&1
+ls -la out/ >> out/os.txt
+CG=""; IIO=""
+for f in out/CoreGraphics out/com.apple.CoreGraphics; do [ -f "$f" ] && CG="$f"; done
+for f in out/ImageIO out/com.apple.ImageIO; do [ -f "$f" ] && IIO="$f"; done
+echo "CG=$CG IIO=$IIO" >> out/os.txt
+[ -n "$CG" ] && { lipo -info "$CG" >> out/os.txt 2>&1; nm -gU "$CG" 2>/dev/null | grep -E "aa_|glyph|Glyph" > out/cg_syms.txt; }
+[ -n "$IIO" ] && nm -gU "$IIO" 2>/dev/null | grep -iE "pdf|thumbnail" > out/iio_syms.txt
+tar czf cgpack.tgz -C out .
 ls -la cgpack.tgz
