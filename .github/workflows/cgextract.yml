@@ -1,4 +1,4 @@
-name: cg-binary-extract
+name: lldb-crash-introspect
 on:
   workflow_dispatch:
   push:
@@ -11,12 +11,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Extract CoreGraphics + ImageIO
         run: |
-          mkdir -p findings
-          cd detonation/cg-extract
-          bash extract.sh || true
-          cd ../..
-          cp -f detonation/cg-extract/*.txt detonation/cg-extract/*.asm findings/ 2>/dev/null || true
-          ls -la findings/
+          bash detonation/cg-extract/lldb_dump.sh || true
       - uses: actions/upload-artifact@v4
         with:
           name: cg-re-macos14
