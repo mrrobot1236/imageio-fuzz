@@ -8,7 +8,6 @@ clang -O2 -g -o render render.c -framework ImageIO -framework CoreGraphics -fram
 ls -la j1.pdf
 # K1a: node/accumulator map, ASLR off, crash path (the walk engages there)
 JMODE=map lldb -b \
-  -o "settings set target.disable-aslr true" \
   -o "breakpoint set -n aa_cache_render" \
   -o "process launch -- trigger.pdf" \
   -o "command script import $PWD/../cg-extract/jtrace4.py" \
