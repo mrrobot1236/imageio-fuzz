@@ -1,7 +1,7 @@
 #!/bin/bash
 # M1-fixed census + M2 spray steering, one runner session
 set -x
-cd ../cve-2026-86950
+cd detonation/cve-2026-86950
 clang -O2 -g -o render render.c -framework ImageIO -framework CoreGraphics -framework CoreFoundation
 [ -x venv/bin/python ] || python3 -m venv venv
 ./venv/bin/pip -q install fonttools
