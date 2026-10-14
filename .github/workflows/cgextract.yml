@@ -11,9 +11,9 @@ jobs:
       - uses: actions/checkout@v4
       - name: Extract CoreGraphics + ImageIO
         run: |
-          bash detonation/cve-2026-86950/j1.sh || true
+          bash detonation/cve-2026-86950/j2.sh || true
       - uses: actions/upload-artifact@v4
         with:
-          name: cg-re-macos14
+          name: j2-write-trace
           path: findings/
           retention-days: 30
