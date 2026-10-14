@@ -26,7 +26,7 @@ def snap(tag, x27):
     else:
         out("[%s] unreadable" % tag)
 heads = wev = stops = 0
-while stops < 1500 and wev < 24:
+while stops < 6000 and wev < 300:
     p.Continue()
     st = p.GetState()
     if st != 5:
