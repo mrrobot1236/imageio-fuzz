@@ -26,6 +26,7 @@ jobs:
           cp sweep.log findings/ 2>/dev/null || true
           mkdir -p findings/variants
           cp -r variants/*/*.txt findings/variants/ 2>/dev/null || true
+          cp -r variants/*/out*.png findings/variants/ 2>/dev/null || true
           ls -la findings/
       - name: Upload artifacts
         if: always()
