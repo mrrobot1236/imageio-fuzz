@@ -24,6 +24,8 @@ jobs:
           find ~/Library/Logs/DiagnosticReports -type f -name "*.ips" -mmin -60 -exec cp {} findings/ips/ \; 2>/dev/null || true
           cp results.csv findings/ 2>/dev/null || true
           cp sweep.log findings/ 2>/dev/null || true
+          mkdir -p findings/variants
+          cp -r variants/*/*.txt findings/variants/ 2>/dev/null || true
           ls -la findings/
       - name: Upload artifacts
         if: always()
