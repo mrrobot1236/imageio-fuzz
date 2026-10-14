@@ -55,8 +55,8 @@ while stops < 6000 and wev < 300:
         heads += 1
         if heads == 1:
             for reg in ('x27','x22'):
-                ri = p.GetMemoryRegionInfo(r(reg))
-                if ri.IsValid():
+                ri = lldb.SBMemoryRegionInfo()
+                if p.GetMemoryRegionInfo(r(reg), ri).Success():
                     out("[REGION %s] 0x%x-0x%x %s" % (reg, ri.GetRegionBase(), ri.GetRegionEnd(), (ri.GetName() or '?').strip()))
                 else:
                     out("[REGION %s] invalid" % reg)
