@@ -1,0 +1,21 @@
+name: cg-binary-extract
+on:
+  workflow_dispatch:
+  push:
+    paths: ['detonation/cg-extract/**']
+jobs:
+  extract:
+    runs-on: macos-14
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Extract CoreGraphics + ImageIO
+        run: |
+          bash detonation/cg-extract/extract.sh
+          mkdir -p findings
+          cp detonation/cg-extract/cgpack.tgz findings/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cg-binaries-macos14
+          path: findings/
+          retention-days: 30
