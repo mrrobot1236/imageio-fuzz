@@ -45,15 +45,17 @@ jobs:
         run: |
           mkdir -p findings
           date > /tmp/det_start
+          set +e
           {
-            echo "== native repo trigger ==";    ./render trigger.pdf;      echo "exit=$?"
+            echo "== native repo trigger ==";    ./render trigger.pdf;       echo "exit=$?"
             echo "== native regen trigger ==";   ./render regen/trigger.pdf; echo "exit=$?"
             echo "== asan repo trigger ==";      ./render_asan trigger.pdf;  echo "exit=$?"
             echo "== asan regen trigger ==";     ./render_asan regen/trigger.pdf; echo "exit=$?"
           } 2>&1 | tee findings/summary.txt
-          sleep 5
-          find ~/Library/Logs/DiagnosticReports -name "*.ips" -newer /tmp/det_start \
-            -exec cp {} findings/ \; 2>/dev/null || true
+          sleep 12
+          mkdir -p ips
+          find ~/Library/Logs/DiagnosticReports -type f \( -name "*.ips" -o -name "*render*" \) -newer /tmp/det_start \
+            -exec cp {} findings/ips/ \; 2>/dev/null || true
           echo "--- crash reports collected ---"
           ls -la findings/
 
