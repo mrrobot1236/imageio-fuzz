@@ -15,12 +15,10 @@ jobs:
           cd detonation/cg-extract
           bash extract.sh || true
           cd ../..
-          for f in detonation/cg-extract/xout/CoreGraphics detonation/cg-extract/xout/com.apple.CoreGraphics detonation/cg-extract/util.log; do
-            [ -f "$f" ] && cp -f "$f" findings/ || true
-          done
+          cp -f detonation/cg-extract/*.txt detonation/cg-extract/*.asm findings/ 2>/dev/null || true
           ls -la findings/
       - uses: actions/upload-artifact@v4
         with:
-          name: cg-binaries-macos14
+          name: cg-re-macos14
           path: findings/
           retention-days: 30
