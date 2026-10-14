@@ -20,7 +20,7 @@ for I in 1 2 3; do
 done
 # M1: traced census (regions + W marching)
 lldb -b -o "breakpoint set -n aa_cache_render" -o "process launch -- k2_wild.pdf" \
-  -o "command script import $PWD/../cg-extract/jtrace8.py" -o "detach" -o "quit" \
+  -o "command script import $PWD/../cg-extract/jtrace9.py" -o "detach" -o "quit" \
   ./render > m1_trace.txt 2>&1 || true
 echo "W events: $(grep -c '\[W ' m1_trace.txt)" > m1_wcount.txt
 # M2: spray steering — x27 at head1 per spray count
@@ -29,7 +29,7 @@ for NS in 0 2 4 8 12 16; do
   ./venv/bin/python gen_spray.py > /dev/null 2>&1
   ./venv/bin/python gen_pdf2.py k2_spray_${NS}.pdf k2_wild.ttf $NS
   lldb -b -o "breakpoint set -n aa_cache_render" -o "process launch -- k2_spray_${NS}.pdf" \
-    -o "command script import $PWD/../cg-extract/jtrace8.py" -o "detach" -o "quit" \
+    -o "command script import $PWD/../cg-extract/jtrace9.py" -o "detach" -o "quit" \
     ./render > m2_spray_${NS}.txt 2>&1 || true
   grep -m1 "\[head 1\]" m2_spray_${NS}.txt >> m2_law.txt || echo "spray $NS: no head" >> m2_law.txt
   echo "spray $NS rc-data: $(grep -c '\[W ' m2_spray_${NS}.txt) W" >> m2_law.txt

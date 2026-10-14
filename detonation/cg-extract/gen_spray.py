@@ -15,14 +15,13 @@ def build_spray(path, idx, pad_kb=24):
     p2 = TTGlyphPen(None); p2.moveTo((0,0)); p2.lineTo((100,0)); p2.lineTo((100,100)); p2.closePath()
     glyf["A"] = p2.glyph()
     fb.setupGlyf(glyf)
+    fb.setupCharacterMap({65: "A"})
     fb.setupHorizontalMetrics({n:(100,0) for n in glyphOrder})
     fb.setupHorizontalHeader(ascent=100, descent=-100)
-    fb.setupOS2(); fb.setupNameTable({"familyName": fam, "styleName": "R"}); fb.setupPost()
-    # PAD table: recognizable 16-byte pattern per 16B cell: idx<<56 | cell_index
+    fb.setupNameTable({"familyName": fam, "styleName": "R"}); fb.setupOS2(); fb.setupPost()
+    from fontTools.ttLib.tables.DefaultTable import DefaultTable
     cells = pad_kb*1024//8
     pad = b''.join(((idx<<56) | i).to_bytes(8,'little') + (0xdeadbeefcafebabe).to_bytes(8,'little') for i in range(cells))
-    fb.font["PAD "] = pad  # raw table bytes via fontTools generic table
-    from fontTools.ttLib.tables.DefaultTable import DefaultTable
     t = DefaultTable("PAD "); t.data = pad; fb.font["PAD "] = t
     fb.save(path)
 
