@@ -48,4 +48,9 @@ def build(path, font="k2_wild.ttf", nspray=0, trigger="trigger.ttf"):
     print(path, len(out), "nspray", nspray)
 
 if __name__ == "__main__":
-    build(sys.argv[1], nspray=int(sys.argv[2]) if len(sys.argv)>2 else 0)
+    nspray = 0
+    if len(sys.argv) > 3:
+        nspray = int(sys.argv[3])
+    elif len(sys.argv) > 2 and sys.argv[2].isdigit():
+        nspray = int(sys.argv[2])
+    build(sys.argv[1], nspray=nspray)
