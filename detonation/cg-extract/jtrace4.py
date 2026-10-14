@@ -18,12 +18,12 @@ def rd(addr, n):
 # bp loop head +1804, fault +1828
 for bp in list(t.breakpoint_iter()):
     t.BreakpointDelete(bp.GetID())
-t.BreakpointCreateByAddress(base + 7216)   # loop head
-t.BreakpointCreateByAddress(base + 7312)   # fault read
-t.BreakpointCreateByAddress(base + 7936)   # +1984 vertical write
-t.BreakpointCreateByAddress(base + 9584)   # +2396 bilinear write
-t.BreakpointCreateByAddress(base + 9984)   # +2496 span write
-out("[k1] bps armed: +1804 +1828 +1984 +2396 +2496")
+t.BreakpointCreateByAddress(base + 1804)   # loop head (byte offsets!)
+t.BreakpointCreateByAddress(base + 1828)   # fault read
+t.BreakpointCreateByAddress(base + 1984)   # vertical write
+t.BreakpointCreateByAddress(base + 2396)   # bilinear write
+t.BreakpointCreateByAddress(base + 2496)   # span write
+out("[k1] bps armed (BYTE offsets): 1804 1828 1984 2396 2496")
 hits = 0
 first_chain_done = False
 while hits < 500:
@@ -37,7 +37,7 @@ while hits < 500:
     def r(n):
         v = fr.FindRegister(n)
         return v.GetValueAsUnsigned() if v else 0
-    if off == 7216:  # loop head
+    if off == 1804:  # loop head
         x22, x9, x25, x27, x19 = r('x22'), r('x9'), r('x25'), r('x27'), r('x19')
         if hits == 0:
             out("[k1] FIRST HEAD: x22=0x%x x9=0x%x x25=0x%x x27=0x%x x19=0x%x" % (x22, x9, x25, x27, x19))
@@ -63,15 +63,15 @@ while hits < 500:
         if m:
             out("[acc x27=0x%x] %s" % (x27, ' '.join('%08x' % v for v in struct.unpack('<24I', m))))
         hits += 1
-    elif off in (7936, 9584, 9984):  # write sites
+    elif off in (1984, 2396, 2496):  # write sites
         out("[W +%d] x27=0x%x x13=0x%x x14=0x%x x16=0x%x x2=0x%x x17=0x%x x9=0x%x x11=0x%x w12=%d w13=%d w14=%d w15=%d" % (
-            off//4, r('x27'), r('x13'), r('x14'), r('x16'), r('x2'), r('x17'), r('x9'), r('x11'),
+            off, r('x27'), r('x13'), r('x14'), r('x16'), r('x2'), r('x17'), r('x9'), r('x11'),
             r('w12') if r('w12')<2**31 else r('w12')-2**32,
             r('w13') if r('w13')<2**31 else r('w13')-2**32,
             r('w14') if r('w14')<2**31 else r('w14')-2**32,
             r('w15') if r('w15')<2**31 else r('w15')-2**32))
         hits += 1
-    elif off == 7312:  # fault site
+    elif off == 1828:  # fault site
         out("[k1] FAULT-STOP: %s" % desc)
         out("[k1] x9=0x%x x11=0x%x x16=0x%x x22=0x%x x27=0x%x x25=0x%x x19=0x%x" % (
             r('x9'), r('x11'), r('x16'), r('x22'), r('x27'), r('x25'), r('x19')))
