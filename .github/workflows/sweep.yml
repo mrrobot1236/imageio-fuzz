@@ -1,0 +1,34 @@
+name: cve-86950-sweep
+on:
+  workflow_dispatch:
+  push:
+    paths: ['detonation/cve-2026-86950/sweep*']
+
+jobs:
+  sweep:
+    runs-on: macos-14
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build + sweep
+        working-directory: detonation/cve-2026-86950
+        run: |
+          python3 -m venv venv
+          ./venv/bin/pip install -q fonttools
+          ./venv/bin/python sweep_run.py 2>&1 | tee sweep.log
+      - name: Collect crash reports
+        if: always()
+        working-directory: detonation/cve-2026-86950
+        run: |
+          mkdir -p findings/ips
+          find ~/Library/Logs/DiagnosticReports -type f -name "*.ips" -mmin -60 -exec cp {} findings/ips/ \; 2>/dev/null || true
+          cp results.csv findings/ 2>/dev/null || true
+          cp sweep.log findings/ 2>/dev/null || true
+          ls -la findings/
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sweep-results
+          path: detonation/cve-2026-86950/findings/
+          retention-days: 30
