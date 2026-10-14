@@ -1,4 +1,4 @@
-# K1a map mode: walk the node list at loop head, dump nodes + accumulator, ASLR off
+# K1b calibration tracer v4: head chains (first 2), ALL write-site events, BAD_ACCESS forensics
 import os, sys, struct, lldb
 def out(s):
     print(s); sys.stdout.flush()
@@ -7,79 +7,67 @@ p = t.GetProcess()
 th = p.GetSelectedThread()
 fr = th.GetSelectedFrame()
 base = fr.GetPCAddress().GetLoadAddress(t)
-mode = os.environ.get('JMODE', 'map')
-out("[k1] base=0x%x mode=%s" % (base, mode))
+out("[cal] base=0x%x" % base)
 if base in (0, 0xffffffffffffffff):
-    out("[k1] bad base"); sys.exit(0)
+    out("[cal] bad base"); sys.exit(0)
+for bp in list(t.breakpoint_iter()):
+    t.BreakpointDelete(bp.GetID())
+for off in (1804, 1984, 2396, 2496):
+    t.BreakpointCreateByAddress(base + off)
+out("[cal] bps: 1804 1984 2396 2496")
 def rd(addr, n):
     err = lldb.SBError()
     m = p.ReadMemory(addr, n, err)
     return m if err.Success() else None
-# bp loop head +1804, fault +1828
-for bp in list(t.breakpoint_iter()):
-    t.BreakpointDelete(bp.GetID())
-t.BreakpointCreateByAddress(base + 1804)   # loop head (byte offsets!)
-t.BreakpointCreateByAddress(base + 1828)   # fault read
-t.BreakpointCreateByAddress(base + 1984)   # vertical write
-t.BreakpointCreateByAddress(base + 2396)   # bilinear write
-t.BreakpointCreateByAddress(base + 2496)   # span write
-out("[k1] bps armed (BYTE offsets): 1804 1828 1984 2396 2496")
-hits = 0
-first_chain_done = False
-while hits < 500:
-    p.Continue()
-    st = p.GetState()
-    if st != 5:
-        out("[k1] state=%d hits=%d" % (st, hits)); break
-    fr = th.GetSelectedFrame()
-    desc = th.GetStopDescription(200)
-    off = fr.GetPCAddress().GetLoadAddress(t) - base
+def regs(fr):
     def r(n):
         v = fr.FindRegister(n)
         return v.GetValueAsUnsigned() if v else 0
-    if off == 1804:  # loop head
-        x22, x9, x25, x27, x19 = r('x22'), r('x9'), r('x25'), r('x27'), r('x19')
-        if hits == 0:
-            out("[k1] FIRST HEAD: x22=0x%x x9=0x%x x25=0x%x x27=0x%x x19=0x%x" % (x22, x9, x25, x27, x19))
-        # node chain from x9 (active list) and x22 head
-        for lname, start in (('x22head', x22), ('x9chain', x9)):
-            seen = set()
-            cur = start
-            chain = []
-            for i in range(24):
-                if cur in seen or not cur or cur in (0, 0xffffffffffffffff): break
-                seen.add(cur)
-                m = rd(cur, 0x30)
-                if not m: break
-                nxt, = struct.unpack_from('<Q', m, 0)
-                f10, f14, f18, f1c, f20, f24, f2c = struct.unpack_from('<7I', m, 0x10)
-                chain.append("%d:0x%x[nx=0x%x x10=%08x x14=%08x x18=%08x x1c=%08x x20=%08x x24=%08x x2c=%04x]" % (
-                    i, cur, nxt, f10, f14, f18, f1c, f20, f24, f2c & 0xffff))
-                if nxt in seen: break
-                cur = nxt
-            out("[chain %s] %s" % (lname, ' '.join(chain) if chain else '(empty)'))
-        # accumulator around x27
-        m = rd(x27 - 0x10, 0x60)
-        if m:
-            out("[acc x27=0x%x] %s" % (x27, ' '.join('%08x' % v for v in struct.unpack('<24I', m))))
-        hits += 1
-    elif off in (1984, 2396, 2496):  # write sites
-        out("[W +%d] x27=0x%x x13=0x%x x14=0x%x x16=0x%x x2=0x%x x17=0x%x x9=0x%x x11=0x%x w12=%d w13=%d w14=%d w15=%d" % (
-            off, r('x27'), r('x13'), r('x14'), r('x16'), r('x2'), r('x17'), r('x9'), r('x11'),
-            r('w12') if r('w12')<2**31 else r('w12')-2**32,
-            r('w13') if r('w13')<2**31 else r('w13')-2**32,
-            r('w14') if r('w14')<2**31 else r('w14')-2**32,
-            r('w15') if r('w15')<2**31 else r('w15')-2**32))
-        hits += 1
-    elif off == 1828:  # fault site
-        out("[k1] FAULT-STOP: %s" % desc)
-        out("[k1] x9=0x%x x11=0x%x x16=0x%x x22=0x%x x27=0x%x x25=0x%x x19=0x%x" % (
-            r('x9'), r('x11'), r('x16'), r('x22'), r('x27'), r('x25'), r('x19')))
-        for name, addr, cnt in (('x16-0x30', r('x16')-0x30, 12), ('x27', r('x27'), 16)):
+    return r
+heads = wev = stops = 0
+while stops < 1200 and wev < 40:
+    p.Continue()
+    st = p.GetState()
+    if st != 5:
+        out("[cal] state=%d heads=%d wev=%d" % (st, heads, wev)); break
+    fr = th.GetSelectedFrame()
+    desc = th.GetStopDescription(200)
+    off = fr.GetPCAddress().GetLoadAddress(t) - base
+    r = regs(fr)
+    if 'BAD_ACCESS' in desc:
+        out("[cal] FAULT: %s" % desc)
+        out("[cal] x9=0x%x x11=0x%x x16=0x%x x22=0x%x x25=0x%x x27=0x%x x19=0x%x" % (
+            r('x9'), r('x11'), r('x16'), r('x22'), r('x25'), r('x27'), r('x19')))
+        for name, addr, cnt in (('x11-0x30', r('x11')-0x30, 12), ('x16-0x30', r('x16')-0x30, 12)):
             if addr:
                 m = rd(addr, cnt*8)
                 out("[mem %s @0x%x] %s" % (name, addr, ' '.join('%016x' % v for v in struct.unpack('<%dQ' % cnt, m)) if m else 'unreadable'))
         break
-    else:
-        hits += 1
-out("[k1] done hits=%d" % hits)
+    if off == 1804:
+        heads += 1
+        if heads <= 2:
+            out("[head %d] x22=0x%x x9=0x%x x25=0x%x x27=0x%x x19=0x%x" % (heads, r('x22'), r('x9'), r('x25'), r('x27'), r('x19')))
+            for lname, start in (('x22', r('x22')), ('x9', r('x9'))):
+                seen = set(); cur = start; chain = []
+                for i in range(20):
+                    if not cur or cur in seen or cur == 0xffffffffffffffff: break
+                    seen.add(cur)
+                    m = rd(cur, 0x30)
+                    if not m: break
+                    nxt, = struct.unpack_from('<Q', m, 0)
+                    f = struct.unpack_from('<7I', m, 0x10)
+                    chain.append("%d:0x%x[nx=0x%x F=%s]" % (i, cur, nxt, ' '.join('%08x' % v for v in f)))
+                    if nxt in seen: break
+                    cur = nxt
+                out("[chain %s] %s" % (lname, ' '.join(chain) if chain else '(empty)'))
+            m = rd(r('x27'), 0x40)
+            if m:
+                out("[acc] %s" % ' '.join('%08x' % v for v in struct.unpack('<16I', m)))
+    elif off in (1984, 2396, 2496):
+        wev += 1
+        sgn = lambda v: v - 2**32 if v >= 2**31 else v
+        out("[W +%d] x27=0x%x x13=0x%x x14=0x%x x16=0x%x x2=0x%x x17=0x%x w12=%d w13=%d w14=%d w15=%d" % (
+            off, r('x27'), r('x13'), r('x14'), r('x16'), r('x2'), r('x17'),
+            sgn(r('w12')), sgn(r('w13')), sgn(r('w14')), sgn(r('w15'))))
+    stops += 1
+out("[cal] done stops=%d heads=%d wev=%d" % (stops, heads, wev))
