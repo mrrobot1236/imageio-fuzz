@@ -1,4 +1,4 @@
-name: lldb-crash-introspect
+name: phase-J1-write-trace
 on:
   workflow_dispatch:
   push:
@@ -11,7 +11,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Extract CoreGraphics + ImageIO
         run: |
-          bash detonation/cg-extract/lldb_dump.sh || true
+          bash detonation/cve-2026-86950/j1.sh || true
       - uses: actions/upload-artifact@v4
         with:
           name: cg-re-macos14
