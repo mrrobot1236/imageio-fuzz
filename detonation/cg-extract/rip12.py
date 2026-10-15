@@ -32,10 +32,8 @@ for L, DELTA in PLAN:
     T("[rip12] x27=%x guardpage=%x" % (x27, page))
     # mprotect via expression (returns 0 on success)
     expr = '(int)mprotect((void*)%d, 4096, 1)' % page   # PROT_READ=1
-    val = lldb.SBCommandReturnObject()
-    t.EvaluateExpression(expr, val)
-    res = val.GetOutput() or val.GetError() or ""
-    T("[rip12] mprotect -> %s" % (res.strip().splitlines()[-1] if res.strip() else "?"))
+    v = t.EvaluateExpression(expr)
+    T("[rip12] mprotect -> %s" % (v.GetValue() or v.GetError() or "?"))
     t.BreakpointDelete(bpw.GetID()); t.BreakpointDelete(bpe.GetID())
     p.Continue()
     st = p.GetState()
