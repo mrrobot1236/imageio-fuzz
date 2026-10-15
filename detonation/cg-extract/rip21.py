@@ -9,7 +9,7 @@ import lldb
 t = lldb.debugger.GetSelectedTarget()
 CWD = os.getcwd()
 TRACE = open(os.path.join(CWD, "rip21_trace.txt"), "a")
-def T(s): print(s); TRACE.write(s+"\n"); TRACE.flush()
+def T(s): print(s, flush=True); TRACE.write(s+"\n"); TRACE.flush()
 err = lldb.SBError()
 FAKEPTR = 0x515100000000
 
@@ -36,10 +36,23 @@ def launch_with(bps_names):
     p = t.LaunchSimple(["k2_d31472.pdf", "r.png"], None, CWD)
     return p, bps
 
-def wait_stop(p):
+T0 = time.time()
+def RUNLEFT(): return time.time() - T0 < 1500  # 25-min global cap
+
+def wait_stop(p, budget=25):
     p.Continue()
     st = p.GetState()
-    while st == lldb.eStateRunning: time.sleep(0.1); st = p.GetState()
+    t0 = time.time()
+    while st == lldb.eStateRunning:
+        if time.time() - t0 > budget:
+            try: p.Stop(); time.sleep(0.5); st = p.GetState()
+            except Exception: pass
+            if st == lldb.eStateRunning:
+                try: p.Kill()
+                except Exception: pass
+                return lldb.eStateKilled
+            return st
+        time.sleep(0.1); st = p.GetState()
     return st
 
 def stop5_with(p, bpw):
@@ -60,7 +73,10 @@ def stop5_with(p, bpw):
 def killall(p, bps):
     for b in bps:
         if b: t.BreakpointDelete(b.GetID())
-    if p and p.IsValid(): p.Kill()
+    try:
+        if p and p.IsValid() and p.GetState() in (lldb.eStateRunning, lldb.eStateStopped, lldb.eStateSuspended):
+            p.Kill()
+    except Exception: pass
 
 # ---- PHASE-1: consumer trace ----
 p, bps = launch_with(["aa_cache_render"])
@@ -162,6 +178,7 @@ def phase2(stopnum, tag):
             killall(p, [bp_fin]); return
         # other stop (walk leftovers) — keep going
     T("%s finalize never hit" % tag)
+    _ = RUNLEFT()
     killall(p, [bp_fin])
 
 phase2(5, "P2A")
