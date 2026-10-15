@@ -8,7 +8,7 @@ clang -O2 -g -o render5 render5.c -framework ImageIO -framework CoreGraphics -fr
 ./venv/bin/python -c "import sys; sys.path.insert(0,'.'); from gen_k2 import build_font; build_font('k2_e64.ttf', 64)"
 ./venv/bin/python gen_pdf.py k2_e64.pdf k2_e64.ttf
 rm -f rip5log.txt rip5_trace.txt
-lldb -b ./render5 -o "command script import $PWD/rip5.py" > rip5_session.txt 2>&1 || true
+lldb -b ./render5 -o "command script import $PWD/../cg-extract/rip5.py" > rip5_session.txt 2>&1 || true
 # final forensics: bt on last logged strike tag if a release crash was flagged
 WIN=$(grep -E "winner" rip5_trace.txt 2>/dev/null | tail -1 | grep -oE "s[0-9]+" | head -1)
 if [ -n "$WIN" ]; then
