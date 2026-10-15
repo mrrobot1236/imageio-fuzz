@@ -36,7 +36,7 @@ x27 = regs["x27"]
 # scan each register's neighborhood for pointer-shaped qwords
 for name in ("x19", "x20", "x21", "x22", "x23", "x24", "x25", "x26", "x28"):
     base = regs[name]
-    if not base or base > 0x800000000000: continue
+    if not base or base < 0x100000 or base > 0x800000000000: continue
     for span in (0, 0x800, 0x1000):
         a = (base - span) & ~7
         qs = qwords(p, a, 40)
