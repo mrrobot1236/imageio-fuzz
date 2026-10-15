@@ -4,6 +4,10 @@
 set -x
 cd detonation/cve-2026-86950
 clang -O2 -g -o render4 render4.c -framework ImageIO -framework CoreGraphics -framework CoreFoundation || exit 9
+[ -x venv/bin/python ] || python3 -m venv venv
+./venv/bin/pip -q install fonttools
+./venv/bin/python -c "import sys; sys.path.insert(0,'.'); from gen_k2 import build_font; build_font('k2_e64.ttf', 64)"
+./venv/bin/python gen_pdf.py k2_e64.pdf k2_e64.ttf
 {
   echo "breakpoint set -n data_release_info"
   echo "process launch -- k2_e64.pdf z.png"
