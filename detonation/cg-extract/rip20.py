@@ -16,6 +16,10 @@ def wr(p, addr, data):
     p.WriteMemory(addr, data, err)
     return err.Success()
 
+def cleanup(bps):
+    for b in bps:
+        if b: t.BreakpointDelete(b.GetID())
+
 def stop5():
     old = t.GetProcess()
     if old and old.IsValid() and old.GetState() in (lldb.eStateRunning, lldb.eStateStopped, lldb.eStateSuspended):
