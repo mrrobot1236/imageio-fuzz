@@ -47,7 +47,7 @@ clusters.append(cur)
 clusters.sort(key=len, reverse=True)
 fine = set()
 for cl in clusters[:2]:
-    lo, hi = max(27904, cl[0]-128), min(32832, cl[-1]+128)
+    lo, hi = max(27904, cl[0]-128), min(32760, cl[-1]+128)
     pts = list(range(lo, hi+1, 16))
     if len(pts) > 75:
         pts = pts[::len(pts)//75 + 1]
