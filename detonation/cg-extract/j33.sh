@@ -13,7 +13,7 @@ lldb -b ./render5 -o "command script import $PWD/../cg-extract/rip5.py" > rip5_s
 WIN=$(grep -E "winner" rip5_trace.txt 2>/dev/null | tail -1 | grep -oE "s[0-9]+" | head -1)
 if [ -n "$WIN" ]; then
   echo "final bt pass for $WIN"
-  lldb -b ./render5 -o "process launch -- k2_r${WIN}.pdf o_f.png 512 f" \
+  lldb -b ./render5 -o "process launch -- k2_e64.pdf k2_r${WIN}.pdf o_f.png 512 f" \
     -o "bt" -o "register read pc lr x0 x1 x8" -o "quit" > rip5_final.txt 2>&1 || true
   grep -E "frame #|stop reason|pc =" rip5_final.txt | head -20 || true
 fi
