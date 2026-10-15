@@ -14,7 +14,7 @@ jobs:
           bash detonation/cg-extract/j35.sh || true
       - uses: actions/upload-artifact@v4
         with:
-          name: rip7-patternmap
+          name: rip8-finegrid
           path: findings/
           retention-days: 30
   patched26:

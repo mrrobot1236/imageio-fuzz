@@ -13,13 +13,12 @@ Ls = list(range(-27648, -17407, 512)) + list(range(28000, 32761, 512))
 for L in Ls: build_font(f"k2_p{L}.ttf", L)
 print("fonts built:", len(Ls))
 PYB
-for L in $(seq -27648 -512 -17408); do ./venv/bin/python gen_pdf.py k2_p${L}.pdf k2_p${L}.ttf; done
-for L in $(seq 28000 512 32752); do ./venv/bin/python gen_pdf.py k2_p${L}.pdf k2_p${L}.ttf; done
+for L in $(seq 30240 16 31680); do ./venv/bin/python gen_pdf.py k2_p${L}.pdf k2_p${L}.ttf; done
 
 IPSDIR="$HOME/Library/Logs/DiagnosticReports"
 ./venv/bin/python - << 'PYG'
 import subprocess, os, glob, sys, re, json, time
-Ls = list(range(-27648, -17407, 512)) + list(range(28000, 32761, 512)) + [-22528, -20480, -18432, 29536, 30720, 31744]
+Ls = list(range(30240, 31681, 16))
 IPS = os.path.expanduser("~/Library/Logs/DiagnosticReports")
 out = open("patternmap.txt", "w")
 csv = open("patternmap.csv", "w")
