@@ -27,15 +27,14 @@ def gen_pdf(pdf, ttf):
                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 def launch(pdf, tag, ndps):
-    err = lldb.SBError()
-    si = lldb.SBLaunchInfo([os.path.join(CWD, "render5"), pdf, os.path.join(CWD, "o_%s.png" % tag), str(ndps), tag])
-    si.SetWorkingDirectory(CWD)
-    p = t.Launch(si, err)
+    import time
+    p = t.LaunchSimple([pdf, "o_%s.png" % tag, str(ndps), tag], None, CWD)
     if not p or not p.IsValid():
-        T("[rip5] launch failed: %s" % (err.GetCString() or "?")); return None
+        T("[rip5] launch failed"); return None
     st = p.GetState()
-    while st == lldb.eStateRunning:
-        import time; time.sleep(0.2); st = p.GetState()
+    t0 = time.time()
+    while st == lldb.eStateRunning and time.time() - t0 < 120:
+        time.sleep(0.2); st = p.GetState()
     rc = p.GetExitStatus() if st == lldb.eStateExited else -1
     return rc
 
