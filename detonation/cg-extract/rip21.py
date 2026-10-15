@@ -88,33 +88,33 @@ T("P1 stop5 x19=%x x27=%x" % (x19, x27))
 bp_fin = t.BreakpointCreateByName("data_release_info")
 T("P1 data_release_info bp locs=%d" % bp_fin.GetNumLocations())
 t.BreakpointDelete(bpw.GetID())
+t.BreakpointDelete(bps[0].GetID())  # entry bp must go — it refires per level
 hit = False
+nhits = 0
 for i in range(30):
     st = wait_stop(p)
-    if st != lldb.eStateStopped: break
+    if st != lldb.eStateStopped:
+        T("P1 decode ended (st=%s rc=%s)" % (st, p.GetExitStatus() if p.IsValid() else -1)); break
     fr = p.GetSelectedThread().GetSelectedFrame()
     nm = fr.GetSymbol().GetName() if fr.GetSymbol() else "?"
     if "data_release_info" in (nm or ""):
+        nhits += 1
         x0 = fr.FindRegister("x0").GetValueAsUnsigned()
         x8 = fr.FindRegister("x8").GetValueAsUnsigned() if fr.FindRegister("x8") else 0
-        T("P1 FINALIZE x0=%x x8=%x (x19=%x x27=%x)" % (x0, x8, x19, x27))
+        T("P1 FINALIZE#%d x0=%x x8=%x (x19=%x x27=%x) prov: x0-x19=%x x0-x27=%x" % (nhits, x0, x8, x19, x27, x0-x19, x0-x27))
         obj = qwords(p, x0, 0x130//8)
         T("P1 obj dump: %s" % [hex(q) for q in (obj or [])])
-        if obj:
-            src = [j*8 for j, q in enumerate(obj) if q == x8]
-            T("P1 x8-source offsets in obj: %s" % src)
-        # provenance
-        if x19:
-            d = x0 - x19
-            T("P1 PROVENANCE: x0-x19=%x x0-x27=%x pool=%s" % (d, x0-x27, "YES" if -0x4000 <= d <= 0x4000 else "no"))
-        # x30 caller
-        x30 = fr.FindRegister("x30").GetValueAsUnsigned()
-        sym = t.GetSymbolContainingFileAddress(lldb.SBAddress(x30, t)) if False else None
-        T("P1 lr=%x" % x30)
+        if nhits == 1:
+            obj = qwords(p, x0, 0x130//8)
+            T("P1 obj dump: %s" % [hex(q) for q in (obj or [])])
+            if obj:
+                src = [j*8 for j, q in enumerate(obj) if q == x8]
+                T("P1 x8-source offsets in obj: %s" % src)
         hit = True
-        break
-    p.Kill(); break
-if not hit: T("P1 finalize not hit (rc=%s)" % p.GetExitStatus())
+        p.Continue()  # resume past this hit to catch more
+    else:
+        T("P1 stray stop @%s" % nm[:60])
+if not hit: T("P1 finalize NEVER HIT in normal decode")
 killall(p, [bp_fin])
 
 # ---- PHASE-2: poison-place + fake fn-ptr -> PC control ----
@@ -142,8 +142,9 @@ def phase2(stopnum, tag):
     wr(p, x19 + 0x38, struct.pack('<Q', blk))
     T("%s poison x19+0x38 (=%x) -> blk=%x stop=%d" % (tag, orig_next, blk, stopnum))
     t.BreakpointDelete(bwalk.GetID())
+    t.BreakpointDelete(bps[0].GetID())  # entry bp refire noise out
     bp_fin = t.BreakpointCreateByName("data_release_info")
-    for i in range(60):
+    for i in range(200):
         st = wait_stop(p)
         if st != lldb.eStateStopped:
             T("%s exited rc=%s before finalize" % (tag, p.GetExitStatus()))
@@ -177,8 +178,7 @@ def phase2(stopnum, tag):
                     T("%s x8 not found in obj (init may differ)" % tag)
             killall(p, [bp_fin]); return
         # other stop (walk leftovers) — keep going
-    T("%s finalize never hit" % tag)
-    _ = RUNLEFT()
+    T("%s finalize never hit in 200 stops" % tag)
     killall(p, [bp_fin])
 
 phase2(5, "P2A")
