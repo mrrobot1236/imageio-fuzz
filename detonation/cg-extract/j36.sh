@@ -48,10 +48,13 @@ clusters.sort(key=len, reverse=True)
 fine = set()
 for cl in clusters[:2]:
     lo, hi = max(27904, cl[0]-128), min(32832, cl[-1]+128)
-    for L in range(lo, hi+1, 8):
-        fine.add(L)
+    pts = list(range(lo, hi+1, 16))
+    if len(pts) > 75:
+        pts = pts[::len(pts)//75 + 1]
+    fine.update(pts)
 fine -= set(Ls)
 W("PHASE-B fine points: %d" % len(fine))
+fine = sorted(fine)[:160]
 rcB = {}
 for L in sorted(fine):
     rcB[L] = run(L)
