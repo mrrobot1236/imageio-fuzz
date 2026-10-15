@@ -104,6 +104,7 @@ for L in [28032, 28544, 28944, 29840, 30480, 30864, 30992, 31472, 31664, 31792, 
                 tp, n = find_table_page(p, x27)
                 if not tp:
                     T("L=%d no-table(n=%d)" % (L, n)); break
+                tp = tp & ~0xFFF  # ALIGN — x27 isn't page-aligned, mprotect demands it
                 v = t.EvaluateExpression('(int)mprotect((void*)%d, 4096, 1)' % tp)
                 T("L=%d guard table-page=%x (codeptrs=%d) mprot=%d" % (L, tp, n, v.GetValueAsSigned()))
                 t.BreakpointDelete(bw.GetID())  # let it run wild
@@ -127,7 +128,9 @@ for L in [28032, 28544, 28944, 29840, 30480, 30864, 30992, 31472, 31664, 31792, 
                 if vv and vv.IsValid():
                     q = vv.GetValueAsUnsigned()
                     if q: regs[r] = q
+            xx27 = fr.FindRegister("x27").GetValueAsUnsigned()
             T("L=%d strike-regs: %s" % (L, {k: hex(v) for k, v in regs.items()}))
+            if xx27: T("L=%d DELTA fa-x27=%d (0x%x) x0-as-int32=%d" % (L, fa-xx27, (fa-xx27) & 0xFFFFFFFFFFFFFFFF, struct.unpack('<i', struct.pack('<I', regs.get('x0',0) & 0xFFFFFFFF))[0] if 'x0' in regs else 0))
             strike = (symoff, fa)
             killp(p); break
     if strike:
