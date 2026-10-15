@@ -11,10 +11,10 @@ jobs:
       - uses: actions/checkout@v4
       - name: Extract CoreGraphics + ImageIO
         run: |
-          bash detonation/cg-extract/j46.sh || true
+          bash detonation/cg-extract/j47.sh || true
       - uses: actions/upload-artifact@v4
         with:
-          name: rip19-freelist
+          name: rip20-poison2write
           path: findings/
           retention-days: 30
   patched26:
@@ -25,7 +25,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Detonate on patched macOS 26
         run: |
-          bash detonation/cg-extract/j46.sh || true
+          bash detonation/cg-extract/j47.sh || true
       - uses: actions/upload-artifact@v4
         with:
           name: n26-verdict
