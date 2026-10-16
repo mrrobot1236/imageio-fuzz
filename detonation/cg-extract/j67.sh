@@ -1,5 +1,5 @@
 #!/bin/bash
-# RIP-39 gadget stage ONLY (watchdogged)
+# RIP-39 gadget stage ONLY (bash watchdog; macOS has no GNU timeout)
 set -x
 date +%T start-gadget
 cd detonation/cve-2026-86950
@@ -12,8 +12,13 @@ clang -O0 -g -o render7 render7.c -framework ImageIO -framework CoreGraphics -fr
 ./venv/bin/python gen_pdf.py k2_d31472.pdf k2_d31472.ttf
 date +%T fonts-done
 rm -f /tmp/rip39_id.txt rip39_trace.txt
-timeout -k 30 600 lldb -b ./render7 -o "command script import $PWD/../cg-extract/rip39.py" > rip39_session.txt 2>&1 || echo "lldb-watchdog-hit rc=$?"
-date +%T lldb-done
+lldb -b ./render7 -o "command script import $PWD/../cg-extract/rip39.py" > rip39_session.txt 2>&1 &
+LPID=$!
+( sleep 600; kill -9 $LPID 2>/dev/null; echo "WATCHDOG-FIRED" >> rip39_session.txt ) &
+WPID=$!
+wait $LPID; RC=$?
+kill $WPID 2>/dev/null; wait $WPID 2>/dev/null
+date +%T lldb-done rc=$RC
 echo "=== /tmp/rip39_id.txt ===" >> rip39_trace.txt
 cat /tmp/rip39_id.txt >> rip39_trace.txt 2>/dev/null || echo "NO-FILE" >> rip39_trace.txt
 cd ../..
@@ -21,4 +26,3 @@ mkdir -p findings
 cp detonation/cve-2026-86950/{rip39_trace.txt,rip39_session.txt} findings/ 2>/dev/null
 date +%T done
 echo "=== RIP-39 TRACE ==="; cat detonation/cve-2026-86950/rip39_trace.txt
-echo "=== SESSION TAIL ==="; tail -30 detonation/cve-2026-86950/rip39_session.txt
