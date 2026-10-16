@@ -176,6 +176,8 @@ if p and p.IsValid():
                     pass
                 p.Continue()
             else:
+                if i % 100 == 0:
+                    T("DBG i=%d off=%d nm=%s desc=%s" % (i, off, nm[:40], desc[:70]))
                 p.Continue()
     killp(p)
 for b in (b_m2, b_m3, b_fin, b_st, b_w):
