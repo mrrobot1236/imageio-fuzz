@@ -13,7 +13,7 @@ TRACE = open(os.path.join(CVE, "rip38_trace.txt"), "a")
 def T(s): print(s, flush=True); TRACE.write(s + "\n"); TRACE.flush()
 
 os.chdir(CVE)
-PY = os.path.join(CVE, "venv/bin/python")
+PY = os.environ.get("RIP38_PY") or os.path.join(CVE, "venv/bin/python")
 RENDER = os.path.join(CVE, "render7")
 T0 = time.time()
 
