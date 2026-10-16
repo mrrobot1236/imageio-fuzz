@@ -165,7 +165,7 @@ if p and p.IsValid():
                 if fr.GetSymbol() and pc:
                     try:
                         soff = pc - fr.GetSymbol().GetStartAddress().GetLoadAddress(t)
-                        if soff in (1868, 2476, 2540, 2644):
+                        if soff in (1868, 2476, 2496, 2540, 2644):
                             pcr = fr.FindRegister("pc")
                             pcr.SetValueFromCString("0x%x" % (pc + 4))
                             skipped = True
