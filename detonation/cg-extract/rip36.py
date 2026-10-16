@@ -145,6 +145,11 @@ if p and p.IsValid():
                 T("store#%d x2->%x x0->%x" % (patched, R + 0x18, TGT))
             if patched >= 5 and not direct and R and DRI:
                 direct = True
+                # re-assert the poison: render's later stores may have reverted rec+0x18
+                w = t.EvaluateExpression('(void)(*(volatile unsigned long*)0x%x = 0x%xUL)' % (R + 0x18, TGT))
+                T("memwrite rec+0x18=%x -> %s" % (TGT, w.GetError().Success() and "ok" or str(w.GetError())[:100]))
+                chk = t.ReadMemory(R + 0x18, 8)
+                T("verify rec+0x18 = %s" % (chk.hex() if chk else "READ-FAIL"))
                 T("DIRECT-CALL data_release_info(record=%x) via addr %x" % (R, DRI))
                 v = t.EvaluateExpression('(void)((void (*)(void*))0x%x)((void*)0x%x)' % (DRI, R))
                 e = v.GetError()
