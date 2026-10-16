@@ -68,14 +68,18 @@ def func_addr(name):
     for m in t.modules:
         for s in m:
             if s.GetName() == name and s.GetType() == lldb.eSymbolTypeCode:
-                return s.GetLoadAddress(t)
+                a = s.GetStartAddress().GetLoadAddress(t)
+                if a and 0 < a < (1 << 48): return a
     sl = t.FindFunctions(name, lldb.eFunctionNameTypeAuto)
     for i in range(sl.GetSize()):
         f = sl.GetContextAtIndex(i)
         sym = f.GetSymbol()
         if sym:
-            a = sym.GetStartAddress().GetLoadAddress(t)
-            if a and a < (1 << 48): return a
+            try:
+                a = sym.GetStartAddress().GetLoadAddress(t)
+                if a and 0 < a < (1 << 48): return a
+            except Exception:
+                pass
     return None
 
 def read_q(p, addr):
