@@ -94,7 +94,7 @@ b_m3 = t.BreakpointCreateByName("marker3")
 b_fin = t.BreakpointCreateByName("data_release_info")
 b_st = t.BreakpointCreateByName("aa_cache_render"); b_st.SetOneShot(True)
 p = t.LaunchSimple(["k2_s1000.pdf", "r.png", "k2_d31472.pdf", "k2_s1000.pdf"], None, CVE)
-R = None; CB = None; TGT = None; stores = 0; patched = 0; result = "incomplete"
+R = None; CB = None; TGT = None; stores = 0; patched = 0; skips = 0; result = "incomplete"
 if p and p.IsValid():
     th = p.GetSelectedThread()
     pc0 = safe_pc_addr(th.GetSelectedFrame())
@@ -170,21 +170,18 @@ if p and p.IsValid():
                 p.Continue()
                 continue
             desc = p.GetSelectedThread().GetStopDescription(300) or ""
-            if "EXC_BAD_ACCESS" in desc:
-                # fault-skipper: wild-write site faults -> skip the store, keep decode alive
-                skipped = False
-                if fr.GetSymbol() and pc:
+            if "EXC_BAD_ACCESS" in desc and nm == "aa_cache_render":
+                # general fault-skipper: any fault in the render fn -> pc+4, keep alive
+                if skips < 2000 and fr.GetSymbol() and pc:
                     try:
                         soff = pc - fr.GetSymbol().GetStartAddress().GetLoadAddress(t)
-                        if soff in (1868, 2476, 2496, 2540, 2644):
-                            pcr = fr.FindRegister("pc")
-                            pcr.SetValueFromCString("0x%x" % (pc + 4))
-                            skipped = True
-                            T("skip fault at +%d -> pc+4" % soff)
+                        pcr = fr.FindRegister("pc")
+                        pcr.SetValueFromCString("0x%x" % (pc + 4))
+                        skips += 1
+                        if skips <= 5 or skips % 200 == 0:
+                            T("skip#%d fault at +%d" % (skips, soff))
                     except Exception:
                         pass
-                if not skipped and ("faults" not in dir()):
-                    pass
                 p.Continue()
             else:
                 if i % 100 == 0:
