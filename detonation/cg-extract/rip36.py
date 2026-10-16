@@ -94,7 +94,7 @@ b_m3 = t.BreakpointCreateByName("marker3")
 b_fin = t.BreakpointCreateByName("data_release_info")
 b_st = t.BreakpointCreateByName("aa_cache_render"); b_st.SetOneShot(True)
 p = t.LaunchSimple(["k2_s1000.pdf", "r.png", "k2_d31472.pdf", "k2_s1000.pdf"], None, CVE)
-R = None; CB = None; TGT = None; stores = 0; patched = 0; skips = 0; abandoned = False; result = "incomplete"
+R = None; CB = None; TGT = None; DRI = None; stores = 0; patched = 0; skips = 0; abandoned = False; direct = False; result = "incomplete"
 if p and p.IsValid():
     th = p.GetSelectedThread()
     pc0 = safe_pc_addr(th.GetSelectedFrame())
@@ -128,7 +128,9 @@ if p and p.IsValid():
             R = read_q(p, global_addr("g_rec"))
             CB = func_addr("rel_cb")
             TGT = func_addr("hijacked_cb")
-            T("M2 R=%s CB=%s TGT=%s" % (hex(R) if R else None, hex(CB) if CB else None, hex(TGT) if TGT else None))
+            DRI = func_addr("data_release_info")
+            t.BreakpointCreateByName("hijacked_cb")
+            T("M2 R=%s CB=%s TGT=%s DRI=%s" % (hex(R) if R else None, hex(CB) if CB else None, hex(TGT) if TGT else None, hex(DRI) if DRI else None))
             if R and read_q(p, R + 0x18) is not None:
                 T("M2 rec+0x18 pre=%x" % read_q(p, R + 0x18))
             stage = 1
@@ -141,6 +143,14 @@ if p and p.IsValid():
             patched += 1
             if patched <= 3:
                 T("store#%d x2->%x x0->%x" % (patched, R + 0x18, TGT))
+            if patched >= 5 and not direct and R and DRI:
+                direct = True
+                T("DIRECT-CALL data_release_info(record=%x) via addr %x" % (R, DRI))
+                v = t.EvaluateExpression('(void)((void (*)(void*))0x%x)((void*)0x%x)' % (DRI, R))
+                e = v.GetError()
+                T("direct-call returned: %s" % (e.Success() and "ok" or str(e)[:120]))
+                p.Continue()
+                continue
             if patched >= 5 and not abandoned:
                 # patch persisted — drop the store bp, abandon the corrupt decode,
                 # unwind straight to main -> marker3 -> CFRelease -> hijacked teardown
