@@ -14,7 +14,7 @@ jobs:
           bash detonation/cg-extract/j59.sh || true
       - uses: actions/upload-artifact@v4
         with:
-          name: rip32-parent-census
+          name: rip33-teardown-hijack
           path: findings/
           retention-days: 30
   patched26:
