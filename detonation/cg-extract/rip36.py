@@ -104,7 +104,18 @@ if p and p.IsValid():
     for i in range(6000):
         st = wait_stop(p)
         if st != lldb.eStateStopped:
-            result = "ended st=%s rc=%s" % (st, p.GetExitStatus() if p.IsValid() else -1); break
+            result = "ended st=%s rc=%s at-i=%d" % (st, p.GetExitStatus() if p.IsValid() else -1, i); break
+        if i % 200 == 0:
+            _fr = p.GetSelectedThread().GetSelectedFrame()
+            _nm = symn(_fr)[:36]
+            _a2 = safe_pc_addr(_fr) or 0
+            _off = -1
+            try:
+                if _fr.GetSymbol() and _a2:
+                    _off = _a2 - _fr.GetSymbol().GetStartAddress().GetLoadAddress(t)
+            except Exception: pass
+            _d = (p.GetSelectedThread().GetStopDescription(200) or "")[:60]
+            T("LOOP i=%d off=%d nm=%s st=%s desc=%s" % (i, _off, _nm, st, _d))
         fr = p.GetSelectedThread().GetSelectedFrame()
         nm = symn(fr)
         a2 = safe_pc_addr(fr)
