@@ -13,7 +13,7 @@ int main(int argc, char **argv) {
     if (!src) { fprintf(stderr, "SRC-FAIL\n"); return 2; }
     int maxpx = 320;
     CFNumberRef num = CFNumberCreate(NULL, kCFNumberIntType, &maxpx);
-    const void *keys2[] = { kCGImageSourceCreateThumbnailFromDocumentAbsolute, kCGImageSourceThumbnailMaxPixelSize };
+    const void *keys2[] = { kCGImageSourceCreateThumbnailFromImageIfAbsent, kCGImageSourceThumbnailMaxPixelSize };
     const void *vals2[] = { kCFBooleanTrue, num };
     CFDictionaryRef opts2 = CFDictionaryCreate(NULL, keys2, vals2, 2,
         &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
