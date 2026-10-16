@@ -57,7 +57,11 @@ def symn(fr):
 
 def global_addr(name):
     for sym in t.FindGlobalVariables(name, 1):
-        return sym.GetStartAddress().GetLoadAddress(t)
+        try:
+            a = sym.GetAddress().GetLoadAddress(t)
+            if a and 0 < a < (1 << 48): return a
+        except Exception:
+            pass
     return None
 
 def func_addr(name):
