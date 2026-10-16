@@ -85,7 +85,7 @@ b_m2 = t.BreakpointCreateByName("marker2")
 b_m3 = t.BreakpointCreateByName("marker3")
 b_fin = t.BreakpointCreateByName("data_release_info")
 b_st = t.BreakpointCreateByName("aa_cache_render"); b_st.SetOneShot(True)
-p = t.LaunchSimple(["k2_s1000.pdf", "r.png"], None, CVE)
+p = t.LaunchSimple(["k2_s1000.pdf", "r.png", "k2_d31472.pdf"], None, CVE)
 R = None; CB = None; stores = 0; patched = 0; result = "incomplete"
 if p and p.IsValid():
     th = p.GetSelectedThread()
