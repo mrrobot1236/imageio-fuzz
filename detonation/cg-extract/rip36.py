@@ -136,6 +136,12 @@ if p and p.IsValid():
                 T("M2 rec+0x18 pre=%x" % read_q(p, R + 0x18))
             stage = 1
             p.Continue()
+        elif off == 2540 and "EXC_BAD_ACCESS" in (p.GetSelectedThread().GetStopDescription(200) or ""):
+            if fr.GetSymbol() and pc:
+                pcr = fr.FindRegister("pc")
+                pcr.SetValueFromCString("0x%x" % (pc + 4))
+                skips += 1
+            p.Continue()
         elif off == 2540 and stage >= 1 and R and TGT:
             stores += 1
             x2r = fr.FindRegister("x2"); x0r = fr.FindRegister("x0")
@@ -156,10 +162,10 @@ if p and p.IsValid():
                     T("verify rec+0x18 = %s (want tgt)" % (chk.hex() if chk else "READ-FAIL"))
                 except Exception as _e:
                     T("memwrite EXC: %s" % _e)
-                T("DIRECT-CALL data_release_info(record=%x) via addr %x" % (R, DRI))
-                v = t.EvaluateExpression('(void)((void (*)(void*))0x%x)((void*)0x%x)' % (DRI, R))
-                e = v.GetError()
-                T("direct-call returned: %s" % (e.Success() and "ok" or str(e)[:120]))
+                T("THREAD-REDIRECT pc->data_release_info(%x) x0=record=%x" % (DRI, R))
+                fr.FindRegister("x0").SetValueFromCString("0x%x" % R)
+                fr.FindRegister("pc").SetValueFromCString("0x%x" % DRI)
+                T("redirect armed: teardown executes in-thread; +24 blraaz forces x8=TGT")
                 p.Continue()
                 continue
             if patched >= 5 and not abandoned:
