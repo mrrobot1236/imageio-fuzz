@@ -150,7 +150,10 @@ if p and p.IsValid():
                 for fi in range(th2.GetNumFrames()):
                     f2 = th2.GetFrameAtIndex(fi)
                     if symn(f2) == "main":
-                        mframe = f2; break
+                        # return from main's CALLEE (fi+1) -> main resumes at call site
+                        if fi + 1 < th2.GetNumFrames():
+                            mframe = th2.GetFrameAtIndex(fi + 1)
+                        break
                 if mframe is not None:
                     ok = th2.ReturnFromFrame(mframe, lldb.SBValue())
                     T("returned-to-main ok=%s" % ok)
