@@ -2,7 +2,7 @@ name: phase-M-N-campaign
 on:
   workflow_dispatch:
   push:
-    paths: ['detonation/cg-extract/**']
+    paths: ['detonation/cg-extract/**', 'detonation/ios-oracle/**', '.github/workflows/cgextract.yml']
 jobs:
   gadget39:
     runs-on: macos-14
