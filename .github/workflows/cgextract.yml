@@ -4,30 +4,48 @@ on:
   push:
     paths: ['detonation/cg-extract/**']
 jobs:
-  extract:
+  gadget39:
     runs-on: macos-14
-    timeout-minutes: 40
+    timeout-minutes: 25
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
-      - name: Extract CoreGraphics + ImageIO
+      - name: RIP-39 gadget stage
         run: |
-          bash detonation/cg-extract/j66.sh || true
+          bash detonation/cg-extract/j67.sh || true
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: rip38-39-oracle-gadget
+          name: rip39-gadget
+          path: findings/
+          retention-days: 30
+  oracle38:
+    runs-on: macos-14
+    timeout-minutes: 30
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: RIP-38 blind oracle
+        run: |
+          bash detonation/cg-extract/j68.sh || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rip38-oracle
           path: findings/
           retention-days: 30
   patched26:
     runs-on: macos-26
-    timeout-minutes: 40
+    timeout-minutes: 25
     continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - name: Detonate on patched macOS 26
         run: |
-          bash detonation/cg-extract/j66.sh || true
+          bash detonation/cg-extract/j67.sh || true
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: n26-verdict-r38-39
-          path: findings26/
+          name: n26-gadget
+          path: findings/
           retention-days: 30

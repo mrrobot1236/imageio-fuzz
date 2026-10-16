@@ -33,22 +33,35 @@ def probe(L):
     r = subprocess.run([RENDER, pdf, "probe_out.png"], cwd=CVE, capture_output=True, timeout=60)
     rc = r.returncode
     cls = "survive" if rc == 0 else ("graceful" if rc == 1 else "crash")
-    T("probe L=%d rc=%s class=%s (%.1fs)" % (L, rc, cls, time.time() - T0))
+    T("probe L=%d rc=%s class=%s (%.1fs elapsed)" % (L, rc, cls, time.time() - T0))
     return cls
 
+BUDGET = {"n": 0}
+def probes_left(cap=45):
+    BUDGET["n"] += 1
+    return BUDGET["n"] <= cap
+
 def bsearch(lo, hi, lo_expect, hi_expect, tag, step=128):
-    # validate endpoints, widen if needed
     c = probe(lo)
-    while c != lo_expect and lo > 1024:
+    while c != lo_expect and lo > 1024 and probes_left():
         lo //= 2; c = probe(lo)
     c = probe(hi)
-    while c != hi_expect and hi < 200000:
+    while c != hi_expect and hi < 200000 and probes_left():
         hi = int(hi * 1.5); c = probe(hi)
     T("oracle[%s] endpoints lo=%d(%s) hi=%d(%s)" % (tag, lo, lo_expect, hi, hi_expect))
-    while hi - lo > step:
+    stall = 0
+    while hi - lo > step and probes_left():
         mid = (lo + hi) // 2 // 8 * 8
         c = probe(mid)
-        if c is None: continue
+        if c is None:
+            stall += 1
+            T("oracle[%s] GEN-FAIL stall=%d at mid=%d" % (tag, stall, mid))
+            if stall >= 3:
+                T("oracle[%s] abort: gen failing" % tag); break
+            mid = (mid + lo) // 2 // 8 * 8  # nudge, don't loop same point
+            c = probe(mid)
+            if c is None: break
+        stall = 0
         if c == lo_expect: lo = mid
         else: hi = mid
     return hi
