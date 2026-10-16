@@ -109,3 +109,19 @@ jobs:
           name: n26-gadget
           path: findings/
           retention-days: 30
+
+  ios-oracle-v1:
+    runs-on: macos-26
+    timeout-minutes: 20
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: ORACLE v1 band calibration (thumbnail ingest scan)
+        run: |
+          bash detonation/ios-oracle/j72.sh || true
+      - name: Upload oracle v1 artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-oracle-v1
+          path: findings/ios-oracle/
