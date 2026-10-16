@@ -34,6 +34,36 @@ jobs:
           name: rip38-oracle
           path: findings/
           retention-days: 30
+  aslr40:
+    runs-on: macos-14
+    timeout-minutes: 25
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: RIP-40 ASLR leak
+        run: |
+          bash detonation/cg-extract/j69.sh || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rip40-aslr
+          path: findings/
+          retention-days: 30
+  gadget26o2:
+    runs-on: macos-26
+    timeout-minutes: 25
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: RIP-39 gadget on 26 (O2)
+        run: |
+          bash detonation/cg-extract/j70.sh || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rip39-gadget-26o2
+          path: findings/
+          retention-days: 30
   patched26:
     runs-on: macos-26
     timeout-minutes: 25
