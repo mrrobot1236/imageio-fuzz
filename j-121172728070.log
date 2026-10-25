@@ -1,0 +1,279 @@
+﻿2026-10-25T12:46:52.9432070Z Current runner version: '2.338.0'
+2026-10-25T12:46:52.9451340Z ##[group]Runner Image Provisioner
+2026-10-25T12:46:52.9451920Z Hosted Compute Agent
+2026-10-25T12:46:52.9452620Z Version: 20260828.587
+2026-10-25T12:46:52.9453060Z Commit: abac92662cab4cc7352de4f9f9d2e2419aad9c29
+2026-10-25T12:46:52.9453540Z Build Date: 2026-08-28T16:44:25Z
+2026-10-25T12:46:52.9453960Z Worker ID: {121a4e97-d086-484c-88f8-8b9e6b4d3f21}
+2026-10-25T12:46:52.9454510Z Azure Region: westus
+2026-10-25T12:46:52.9454930Z ##[endgroup]
+2026-10-25T12:46:52.9458020Z ##[group]Operating System
+2026-10-25T12:46:52.9458440Z macOS
+2026-10-25T12:46:52.9458760Z 14.8.9
+2026-10-25T12:46:52.9459070Z 23J631
+2026-10-25T12:46:52.9459900Z ##[endgroup]
+2026-10-25T12:46:52.9460240Z ##[group]Runner Image
+2026-10-25T12:46:52.9460620Z Image: macos-14-arm64
+2026-10-25T12:46:52.9460980Z Version: 20260831.0302.1
+2026-10-25T12:46:52.9461820Z Included Software: https://github.com/actions/runner-images/blob/macos-14-arm64/20260831.0302/images/macos/macos-14-arm64-Readme.md
+2026-10-25T12:46:52.9463180Z Image Release: https://github.com/actions/runner-images/releases/tag/macos-14-arm64%2F20260831.0302
+2026-10-25T12:46:52.9463860Z ##[endgroup]
+2026-10-25T12:46:52.9464650Z ##[group]GITHUB_TOKEN Permissions
+2026-10-25T12:46:52.9466260Z Contents: read
+2026-10-25T12:46:52.9466620Z Metadata: read
+2026-10-25T12:46:52.9467120Z Packages: read
+2026-10-25T12:46:52.9467490Z ##[endgroup]
+2026-10-25T12:46:52.9468860Z Secret source: Actions
+2026-10-25T12:46:52.9469740Z Cache mode: write
+2026-10-25T12:46:52.9470220Z Prepare workflow directory
+2026-10-25T12:46:52.9824910Z Prepare all required actions
+2026-10-25T12:46:52.9858130Z Getting action download info
+2026-10-25T12:46:53.1269190Z Download action repository 'actions/checkout@v4' (SHA:11d5960a326750d5838078e36cf38b85af677262)
+2026-10-25T12:46:53.3201580Z Download action repository 'actions/upload-artifact@v4' (SHA:ea165f8d65b6e75b540449e92b4886f43607fa02)
+2026-10-25T12:46:53.4702180Z Complete job name: detonate (macos-14, 64752)
+2026-10-25T12:46:53.5100700Z ##[group]Run actions/checkout@v4
+2026-10-25T12:46:53.5101260Z with:
+2026-10-25T12:46:53.5101590Z   repository: mrrobot1236/imageio-fuzz
+2026-10-25T12:46:53.5103980Z   token: ***
+2026-10-25T12:46:53.5104270Z   ssh-strict: true
+2026-10-25T12:46:53.5104560Z   ssh-user: git
+2026-10-25T12:46:53.5104860Z   persist-credentials: true
+2026-10-25T12:46:53.5105180Z   clean: true
+2026-10-25T12:46:53.5105480Z   sparse-checkout-cone-mode: true
+2026-10-25T12:46:53.5105830Z   fetch-depth: 1
+2026-10-25T12:46:53.5106120Z   fetch-tags: false
+2026-10-25T12:46:53.5106420Z   show-progress: true
+2026-10-25T12:46:53.5106710Z   lfs: false
+2026-10-25T12:46:53.5106990Z   submodules: false
+2026-10-25T12:46:53.5107290Z   set-safe-directory: true
+2026-10-25T12:46:53.5107630Z   allow-unsafe-pr-checkout: false
+2026-10-25T12:46:53.5108070Z env:
+2026-10-25T12:46:53.5108340Z   CVE: 64752
+2026-10-25T12:46:53.5108620Z ##[endgroup]
+2026-10-25T12:46:53.6218850Z Syncing repository: mrrobot1236/imageio-fuzz
+2026-10-25T12:46:53.6220240Z ##[group]Getting Git version info
+2026-10-25T12:46:53.6220810Z Working directory is '/Users/runner/work/imageio-fuzz/imageio-fuzz'
+2026-10-25T12:46:53.6221730Z [command]/opt/homebrew/bin/git version
+2026-10-25T12:46:53.6390020Z git version 2.55.0
+2026-10-25T12:46:53.6401720Z ##[endgroup]
+2026-10-25T12:46:53.6409220Z Copying '/Users/runner/.gitconfig' to '/Users/runner/work/_temp/3195a482-38a7-4dfa-bef0-4e671247c30c/.gitconfig'
+2026-10-25T12:46:53.6417120Z Temporarily overriding HOME='/Users/runner/work/_temp/3195a482-38a7-4dfa-bef0-4e671247c30c' before making global git config changes
+2026-10-25T12:46:53.6418400Z Adding repository directory to the temporary git global config as a safe directory
+2026-10-25T12:46:53.6421200Z [command]/opt/homebrew/bin/git config --global --add safe.directory /Users/runner/work/imageio-fuzz/imageio-fuzz
+2026-10-25T12:46:53.6554730Z Deleting the contents of '/Users/runner/work/imageio-fuzz/imageio-fuzz'
+2026-10-25T12:46:53.6557020Z ##[group]Initializing the repository
+2026-10-25T12:46:53.6560670Z [command]/opt/homebrew/bin/git init /Users/runner/work/imageio-fuzz/imageio-fuzz
+2026-10-25T12:46:53.6720530Z hint: Using 'master' as the name for the initial branch. This default branch name
+2026-10-25T12:46:53.6721910Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2026-10-25T12:46:53.6722700Z hint: to use in all of your new repositories, which will suppress this warning,
+2026-10-25T12:46:53.6723750Z hint: call:
+2026-10-25T12:46:53.6724160Z hint:
+2026-10-25T12:46:53.6724650Z hint: 	git config --global init.defaultBranch <name>
+2026-10-25T12:46:53.6725150Z hint:
+2026-10-25T12:46:53.6725640Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2026-10-25T12:46:53.6727420Z hint: 'development'. The just-created branch can be renamed via this command:
+2026-10-25T12:46:53.6728180Z hint:
+2026-10-25T12:46:53.6728500Z hint: 	git branch -m <name>
+2026-10-25T12:46:53.6728860Z hint:
+2026-10-25T12:46:53.6729380Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2026-10-25T12:46:53.6731320Z Initialized empty Git repository in /Users/runner/work/imageio-fuzz/imageio-fuzz/.git/
+2026-10-25T12:46:53.6733250Z [command]/opt/homebrew/bin/git remote add origin https://github.com/mrrobot1236/imageio-fuzz
+2026-10-25T12:46:53.6779700Z ##[endgroup]
+2026-10-25T12:46:53.6780340Z ##[group]Disabling automatic garbage collection
+2026-10-25T12:46:53.6781960Z [command]/opt/homebrew/bin/git config --local gc.auto 0
+2026-10-25T12:46:53.6819220Z ##[endgroup]
+2026-10-25T12:46:53.6819790Z ##[group]Setting up auth
+2026-10-25T12:46:53.6823680Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-10-25T12:46:53.6860620Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-10-25T12:46:53.7406670Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-25T12:46:53.7452060Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-10-25T12:46:53.7937860Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-10-25T12:46:53.7977150Z [command]/opt/homebrew/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-10-25T12:46:53.8422040Z [command]/opt/homebrew/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-10-25T12:46:53.8461100Z ##[endgroup]
+2026-10-25T12:46:53.8461720Z ##[group]Fetching the repository
+2026-10-25T12:46:53.8466010Z [command]/opt/homebrew/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +813585c2f5b496f9052690eda948125c3e5121fe:refs/remotes/origin/main
+2026-10-25T12:46:54.8300920Z From https://github.com/mrrobot1236/imageio-fuzz
+2026-10-25T12:46:54.8301870Z  * [new ref]         813585c2f5b496f9052690eda948125c3e5121fe -> origin/main
+2026-10-25T12:46:54.8306010Z ##[endgroup]
+2026-10-25T12:46:54.8306850Z ##[group]Determining the checkout info
+2026-10-25T12:46:54.8307720Z ##[endgroup]
+2026-10-25T12:46:54.8310000Z [command]/opt/homebrew/bin/git sparse-checkout disable
+2026-10-25T12:46:54.8368800Z [command]/opt/homebrew/bin/git config --local --unset-all extensions.worktreeConfig
+2026-10-25T12:46:54.8415240Z ##[group]Checking out the ref
+2026-10-25T12:46:54.8416910Z [command]/opt/homebrew/bin/git checkout --progress --force -B main refs/remotes/origin/main
+2026-10-25T12:46:54.9030760Z Switched to a new branch 'main'
+2026-10-25T12:46:54.9031840Z branch 'main' set up to track 'origin/main'.
+2026-10-25T12:46:54.9036260Z ##[endgroup]
+2026-10-25T12:46:54.9087480Z [command]/opt/homebrew/bin/git log -1 --format=%H
+2026-10-25T12:46:54.9122360Z 813585c2f5b496f9052690eda948125c3e5121fe
+2026-10-25T12:46:54.9270860Z ##[group]Run sw_vers || true
+2026-10-25T12:46:54.9271780Z [36;1msw_vers || true[0m
+2026-10-25T12:46:54.9272770Z [36;1mfor fw in ImageIO CoreMedia CoreGraphics; do[0m
+2026-10-25T12:46:54.9274030Z [36;1m  f="/System/Library/Frameworks/${fw}.framework/${fw}"[0m
+2026-10-25T12:46:54.9275340Z [36;1m  otool -L "$f" 2>/dev/null | head -2 || echo "$fw: not found"[0m
+2026-10-25T12:46:54.9276460Z [36;1mdone[0m
+2026-10-25T12:46:54.9359940Z shell: /bin/bash -e {0}
+2026-10-25T12:46:54.9360790Z env:
+2026-10-25T12:46:54.9361500Z   CVE: 64752
+2026-10-25T12:46:54.9362210Z ##[endgroup]
+2026-10-25T12:46:54.9917190Z ProductName:		macOS
+2026-10-25T12:46:54.9918280Z ProductVersion:		14.8.9
+2026-10-25T12:46:54.9919190Z BuildVersion:		23J631
+2026-10-25T12:46:55.5542300Z ##[group]Run printf '%s\n'             '#import <Foundation/Foundation.h>' \
+2026-10-25T12:46:55.5542890Z [36;1mprintf '%s\n'             '#import <Foundation/Foundation.h>' \[0m
+2026-10-25T12:46:55.5543280Z [36;1m  '#import <ImageIO/ImageIO.h>' \[0m
+2026-10-25T12:46:55.5543760Z [36;1m  'int LLVMFuzzerTestOneInput(const uint8_t *d, size_t s) { return 0; }' > /tmp/smoke.m[0m
+2026-10-25T12:46:55.5544190Z [36;1mtryclang() {[0m
+2026-10-25T12:46:55.5544650Z [36;1m  "$1" -fsanitize=fuzzer,address,undefined -g -O1 -x objective-c /tmp/smoke.m \[0m
+2026-10-25T12:46:55.5545200Z [36;1m    -framework Foundation -framework ImageIO -o /tmp/smoke.bin >/dev/null 2>&1[0m
+2026-10-25T12:46:55.5545700Z [36;1m}[0m
+2026-10-25T12:46:55.5545920Z [36;1mCLANG=""[0m
+2026-10-25T12:46:55.5546380Z [36;1mfor c in /opt/homebrew/opt/llvm@15/bin/clang /opt/homebrew/opt/llvm/bin/clang /usr/bin/clang; do[0m
+2026-10-25T12:46:55.5547040Z [36;1m  if [ -x "$c" ] && tryclang "$c"; then CLANG="$c"; break; fi[0m
+2026-10-25T12:46:55.5547340Z [36;1mdone[0m
+2026-10-25T12:46:55.5547620Z [36;1mif [ -z "$CLANG" ] && command -v brew >/dev/null 2>&1; then[0m
+2026-10-25T12:46:55.5548080Z [36;1m  for f in llvm@18 llvm@19 llvm@20 llvm@21 llvm@22 llvm; do[0m
+2026-10-25T12:46:55.5548520Z [36;1m    echo "no preinstalled clang passed smoke test, trying brew install $f..."[0m
+2026-10-25T12:46:55.5548960Z [36;1m    brew install "$f" >/dev/null 2>&1 || continue[0m
+2026-10-25T12:46:55.5549270Z [36;1m    c="/opt/homebrew/opt/$f/bin/clang"[0m
+2026-10-25T12:46:55.5549620Z [36;1m    if [ -x "$c" ] && tryclang "$c"; then CLANG="$c"; break; fi[0m
+2026-10-25T12:46:55.5549930Z [36;1m  done[0m
+2026-10-25T12:46:55.5550140Z [36;1mfi[0m
+2026-10-25T12:46:55.5550330Z [36;1mif [ -z "$CLANG" ]; then[0m
+2026-10-25T12:46:55.5550650Z [36;1m  CLANG=/usr/bin/clang[0m
+2026-10-25T12:46:55.5551050Z [36;1m  echo "WARNING: no clang passed libFuzzer smoke test, falling back to Apple clang"[0m
+2026-10-25T12:46:55.5551430Z [36;1mfi[0m
+2026-10-25T12:46:55.5551650Z [36;1mecho "CLANG=$CLANG" >> "$GITHUB_ENV"[0m
+2026-10-25T12:46:55.5551920Z [36;1mecho "using clang: $CLANG"[0m
+2026-10-25T12:46:55.5552180Z [36;1m$CLANG --version | head -1 || true[0m
+2026-10-25T12:46:55.5607870Z shell: /bin/bash -e {0}
+2026-10-25T12:46:55.5608170Z env:
+2026-10-25T12:46:55.5608390Z   CVE: 64752
+2026-10-25T12:46:55.5608590Z ##[endgroup]
+2026-10-25T12:46:57.8400800Z no preinstalled clang passed smoke test, trying brew install llvm@18...
+2026-10-25T12:47:19.8223770Z using clang: /opt/homebrew/opt/llvm@18/bin/clang
+2026-10-25T12:47:19.8414090Z Homebrew clang version 18.1.8
+2026-10-25T12:47:19.8688080Z ##[group]Run CANDIDATES=""
+2026-10-25T12:47:19.8689860Z [36;1mCANDIDATES=""[0m
+2026-10-25T12:47:19.8690720Z [36;1mfor d in /Applications/Xcode*.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX*.sdk; do[0m
+2026-10-25T12:47:19.8692090Z [36;1m  [ -d "$d" ] && CANDIDATES="$CANDIDATES $d"[0m
+2026-10-25T12:47:19.8692600Z [36;1mdone[0m
+2026-10-25T12:47:19.8693780Z [36;1mXCSDK=$(xcrun --sdk macosx --show-sdk-path 2>/dev/null || true)[0m
+2026-10-25T12:47:19.8696610Z [36;1m[ -n "$XCSDK" ] && CANDIDATES="$CANDIDATES $XCSDK"[0m
+2026-10-25T12:47:19.8706730Z [36;1mCANDIDATES="$CANDIDATES /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk"[0m
+2026-10-25T12:47:19.8708660Z [36;1mecho "SDK candidates: $CANDIDATES"[0m
+2026-10-25T12:47:19.8709560Z [36;1mCM_SDK=""[0m
+2026-10-25T12:47:19.8710660Z [36;1mSDK=""[0m
+2026-10-25T12:47:19.8711200Z [36;1mfor s in $CANDIDATES; do[0m
+2026-10-25T12:47:19.8713240Z [36;1m  if [ -f "$s/System/Library/Frameworks/CoreMedia.framework/Headers/CMPhoto.h" ] \[0m
+2026-10-25T12:47:19.8715120Z [36;1m     || [ -f "$s/System/Library/Frameworks/CoreMedia.framework/PrivateHeaders/CMPhoto.h" ]; then[0m
+2026-10-25T12:47:19.8716140Z [36;1m    CM_SDK="$s"; break[0m
+2026-10-25T12:47:19.8716800Z [36;1m  fi[0m
+2026-10-25T12:47:19.8717980Z [36;1mdone[0m
+2026-10-25T12:47:19.8718740Z [36;1mfor s in $CANDIDATES; do[0m
+2026-10-25T12:47:19.8719700Z [36;1m  if [ -d "$s" ]; then SDK="$s"; break; fi[0m
+2026-10-25T12:47:19.8720550Z [36;1mdone[0m
+2026-10-25T12:47:19.8722000Z [36;1mecho "CM_SDK=$CM_SDK" >> "$GITHUB_ENV"[0m
+2026-10-25T12:47:19.8722770Z [36;1mecho "SDK=$SDK" >> "$GITHUB_ENV"[0m
+2026-10-25T12:47:19.8723360Z [36;1mecho "SDK: $SDK"[0m
+2026-10-25T12:47:19.8724880Z [36;1mecho "CMPhoto.h SDK: ${CM_SDK:-NONE}"[0m
+2026-10-25T12:47:19.8871810Z shell: /bin/bash -e {0}
+2026-10-25T12:47:19.8872140Z env:
+2026-10-25T12:47:19.8872470Z   CVE: 64752
+2026-10-25T12:47:19.8872970Z   CLANG: /opt/homebrew/opt/llvm@18/bin/clang
+2026-10-25T12:47:19.8873350Z ##[endgroup]
+2026-10-25T12:47:20.7545870Z SDK candidates:  /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX14.5.sdk /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX14.sdk /Applications/Xcode_15.0.1.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk /Applications/Xcode_15.0.1.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX14.0.sdk /Applications/Xcode_15.0.1.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX14.sdk /Applications/Xcode_15.0.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk /Applications/Xcode_15.0.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX14.0.sdk /Applications/Xcode_15.0.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX14.sdk /Applications/Xcode_15.1.0.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk /Applications/Xcode_15.1.0.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX14.2.sdk /Applications/Xcode_15.1.0.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX14.sdk /Applications/Xcode_15.1.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk /Applications/Xcode_15.1.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX14.2.sdk /Applications/Xcode_15.1.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX14.sdk /Applications/Xcode_15.2.0.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk /Applications/Xcode_15.2.0.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX14.2.sdk /Applications/Xcode_15.2.0.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX14.sdk /Applications/Xcode_15.2.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk /Applications/Xcode_15.2.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX14.2.sdk /Applications/Xcode_15.2.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX14.sdk /Applications/Xcode_15.3.0.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk /Applications/Xcode_15.3.0.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX14.4.sdk /Applications/Xcode_15.3.0.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX14.sdk /Applications/Xcode_15.3.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk /Applications/Xcode_15.3.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX14.4.sdk /Applications/Xcode_15.3.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX14.sdk /Applications/Xcode_15.4.0.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk /Applications/Xcode_15.4.0.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX14.5.sdk /Applications/Xcode_15.4.0.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX14.sdk /Applications/Xcode_15.4.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk /Applications/Xcode_15.4.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX14.5.sdk /Applications/Xcode_15.4.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX14.sdk /Applications/Xcode_16.1.0.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk /Applications/Xcode_16.1.0.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.1.sdk /Applications/Xcode_16.1.0.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.sdk /Applications/Xcode_16.1.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk /Applications/Xcode_16.1.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.1.sdk /Applications/Xcode_16.1.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.sdk /Applications/Xcode_16.2.0.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk /Applications/Xcode_16.2.0.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.2.sdk /Applications/Xcode_16.2.0.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.sdk /Applications/Xcode_16.2.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk /Applications/Xcode_16.2.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.2.sdk /Applications/Xcode_16.2.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.sdk /Applications/Xcode_15.4.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX14.5.sdk /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk
+2026-10-25T12:47:20.7880780Z SDK: /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk
+2026-10-25T12:47:20.7882500Z CMPhoto.h SDK: NONE
+2026-10-25T12:47:20.8013260Z ##[group]Run echo "clang: $CLANG  SDK: $SDK  CM_SDK: "
+2026-10-25T12:47:20.8013680Z [36;1mecho "clang: $CLANG  SDK: $SDK  CM_SDK: "[0m
+2026-10-25T12:47:20.8014060Z [36;1mcp ../../harness/imageio_fuzz.m .[0m
+2026-10-25T12:47:20.8014500Z [36;1mif [ -n "$CM_SDK" ] && $CLANG -fsanitize=fuzzer,address,undefined -g -O1 \[0m
+2026-10-25T12:47:20.8015030Z [36;1m    -isysroot "$CM_SDK" -DCMPHOTO_AVAILABLE \[0m
+2026-10-25T12:47:20.8015540Z [36;1m    -framework CoreFoundation -framework CoreGraphics -framework ImageIO \[0m
+2026-10-25T12:47:20.8015960Z [36;1m    -framework CoreMedia -framework CoreVideo \[0m
+2026-10-25T12:47:20.8016390Z [36;1m    coremedia_fuzz.m -o imageio_fuzz_64752 2>cm_build.log; then[0m
+2026-10-25T12:47:20.8016820Z [36;1m  echo "64752: CMPhoto harness built with -isysroot $CM_SDK"[0m
+2026-10-25T12:47:20.8017210Z [36;1melse[0m
+2026-10-25T12:47:20.8017520Z [36;1m  echo "64752: CMPhoto build failed, falling back to ImageIO-only"[0m
+2026-10-25T12:47:20.8017960Z [36;1m  tail -20 cm_build.log[0m
+2026-10-25T12:47:20.8018240Z [36;1m  $CLANG -fsanitize=fuzzer,address,undefined -g -O1 \[0m
+2026-10-25T12:47:20.8018590Z [36;1m    -isysroot "$SDK" \[0m
+2026-10-25T12:47:20.8018980Z [36;1m    -framework CoreFoundation -framework CoreGraphics -framework ImageIO \[0m
+2026-10-25T12:47:20.8019370Z [36;1m    imageio_fuzz.m -o imageio_fuzz_64752[0m
+2026-10-25T12:47:20.8019660Z [36;1mfi[0m
+2026-10-25T12:47:20.8065370Z shell: /bin/bash -e {0}
+2026-10-25T12:47:20.8065770Z env:
+2026-10-25T12:47:20.8066020Z   CVE: 64752
+2026-10-25T12:47:20.8066270Z   CLANG: /opt/homebrew/opt/llvm@18/bin/clang
+2026-10-25T12:47:20.8066590Z   CM_SDK: 
+2026-10-25T12:47:20.8067390Z   SDK: /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk
+2026-10-25T12:47:20.8067870Z ##[endgroup]
+2026-10-25T12:47:20.8472600Z clang: /opt/homebrew/opt/llvm@18/bin/clang  SDK: /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk  CM_SDK: 
+2026-10-25T12:47:20.8575250Z 64752: CMPhoto build failed, falling back to ImageIO-only
+2026-10-25T12:47:20.8649870Z tail: cm_build.log: No such file or directory
+2026-10-25T12:47:20.8674130Z ##[error]Process completed with exit code 1.
+2026-10-25T12:47:20.8740260Z ##[group]Run mkdir -p out/ips
+2026-10-25T12:47:20.8740510Z [36;1mmkdir -p out/ips[0m
+2026-10-25T12:47:20.8740890Z [36;1mfind ~/Library/Logs/DiagnosticReports -type f \( -name "*.ips" -o -name "*imageio*" -o -name "*fuzzer*" \) \[0m
+2026-10-25T12:47:20.8741340Z [36;1m  -exec cp {} out/ips/ \; 2>/dev/null || true[0m
+2026-10-25T12:47:20.8741610Z [36;1mls -la out/ out/campaign/ out/ips/ || true[0m
+2026-10-25T12:47:20.8796920Z shell: /bin/bash -e {0}
+2026-10-25T12:47:20.8797150Z env:
+2026-10-25T12:47:20.8797360Z   CVE: 64752
+2026-10-25T12:47:20.8797610Z   CLANG: /opt/homebrew/opt/llvm@18/bin/clang
+2026-10-25T12:47:20.8797880Z   CM_SDK: 
+2026-10-25T12:47:20.8798220Z   SDK: /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk
+2026-10-25T12:47:20.8798680Z ##[endgroup]
+2026-10-25T12:47:20.9605880Z ls: out/campaign/: No such file or directory
+2026-10-25T12:47:20.9623770Z out/:
+2026-10-25T12:47:20.9624040Z total 0
+2026-10-25T12:47:20.9624430Z drwxr-xr-x  3 runner  staff   96 Oct 25 12:47 .
+2026-10-25T12:47:20.9624810Z drwxr-xr-x  9 runner  staff  288 Oct 25 12:47 ..
+2026-10-25T12:47:20.9625290Z drwxr-xr-x  2 runner  staff   64 Oct 25 12:47 ips
+2026-10-25T12:47:20.9625790Z 
+2026-10-25T12:47:20.9625870Z out/ips/:
+2026-10-25T12:47:20.9626020Z total 0
+2026-10-25T12:47:20.9626200Z drwxr-xr-x  2 runner  staff  64 Oct 25 12:47 .
+2026-10-25T12:47:20.9626750Z drwxr-xr-x  3 runner  staff  96 Oct 25 12:47 ..
+2026-10-25T12:47:20.9696480Z ##[group]Run actions/upload-artifact@v4
+2026-10-25T12:47:20.9696740Z with:
+2026-10-25T12:47:20.9696880Z   name: det-64752-macos-14
+2026-10-25T12:47:20.9697160Z   path: detonation/cve-2026-64752/out/
+detonation/cve-2026-64752/corpus/
+
+2026-10-25T12:47:20.9697460Z   retention-days: 30
+2026-10-25T12:47:20.9697620Z   if-no-files-found: warn
+2026-10-25T12:47:20.9697800Z   compression-level: 6
+2026-10-25T12:47:20.9697960Z   overwrite: false
+2026-10-25T12:47:20.9698130Z   include-hidden-files: false
+2026-10-25T12:47:20.9698300Z env:
+2026-10-25T12:47:20.9698440Z   CVE: 64752
+2026-10-25T12:47:20.9698610Z   CLANG: /opt/homebrew/opt/llvm@18/bin/clang
+2026-10-25T12:47:20.9698830Z   CM_SDK: 
+2026-10-25T12:47:20.9699160Z   SDK: /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk
+2026-10-25T12:47:20.9699550Z ##[endgroup]
+2026-10-25T12:47:21.4401230Z (node:1287) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-10-25T12:47:21.4401920Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-10-25T12:47:21.4477110Z Multiple search paths detected. Calculating the least common ancestor of all paths
+2026-10-25T12:47:21.4478480Z The least common ancestor is /Users/runner/work/imageio-fuzz/imageio-fuzz/detonation/cve-2026-64752. This will be the root directory of the artifact
+2026-10-25T12:47:21.4492860Z ##[warning]No files were found with the provided path: detonation/cve-2026-64752/out/
+detonation/cve-2026-64752/corpus/. No artifacts will be uploaded.
+2026-10-25T12:47:21.4631960Z Post job cleanup.
+2026-10-25T12:47:21.5741750Z [command]/opt/homebrew/bin/git version
+2026-10-25T12:47:21.5904480Z git version 2.55.0
+2026-10-25T12:47:21.5933410Z Copying '/Users/runner/.gitconfig' to '/Users/runner/work/_temp/50358247-d85c-4262-84aa-38115cd9dc21/.gitconfig'
+2026-10-25T12:47:21.5941590Z Temporarily overriding HOME='/Users/runner/work/_temp/50358247-d85c-4262-84aa-38115cd9dc21' before making global git config changes
+2026-10-25T12:47:21.5942810Z Adding repository directory to the temporary git global config as a safe directory
+2026-10-25T12:47:21.5947820Z [command]/opt/homebrew/bin/git config --global --add safe.directory /Users/runner/work/imageio-fuzz/imageio-fuzz
+2026-10-25T12:47:21.6013200Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-10-25T12:47:21.6068160Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-10-25T12:47:21.6961300Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-25T12:47:21.7017090Z http.https://github.com/.extraheader
+2026-10-25T12:47:21.7034100Z [command]/opt/homebrew/bin/git config --local --unset-all http.https://github.com/.extraheader
+2026-10-25T12:47:21.7108270Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-10-25T12:47:21.7857870Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-10-25T12:47:21.7904900Z [command]/opt/homebrew/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-10-25T12:47:21.8951790Z Cleaning up orphan processes
+2026-10-25T12:47:22.3258680Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/

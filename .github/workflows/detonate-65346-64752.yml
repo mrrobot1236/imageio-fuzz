@@ -100,21 +100,21 @@ jobs:
             -framework CoreFoundation -framework CoreGraphics -framework ImageIO \
             imageio_fuzz.m -o imageio_fuzz_65346
 
-      - name: Build 64752 harness (CMPhoto when SDK has it, else ImageIO fallback)
+      - name: Build 64752 harness (ImageIO->CMPhoto funnel, public API only)
         if: matrix.cve == '64752'
         working-directory: detonation/cve-2026-64752
         run: |
-          echo "clang: $CLANG  SDK: $SDK  CM_SDK: ${{ env.CM_SDK }}"
+          echo "clang: $CLANG  SDK: $SDK"
           cp ../../harness/imageio_fuzz.m .
-          if [ -n "$CM_SDK" ] && $CLANG -fsanitize=fuzzer,address,undefined -g -O1 \
-              -isysroot "$CM_SDK" -DCMPHOTO_AVAILABLE \
+          if $CLANG -fsanitize=fuzzer,address,undefined -g -O1 \
+              -isysroot "$SDK" \
               -framework CoreFoundation -framework CoreGraphics -framework ImageIO \
               -framework CoreMedia -framework CoreVideo \
               coremedia_fuzz.m -o imageio_fuzz_64752 2>cm_build.log; then
-            echo "64752: CMPhoto harness built with -isysroot $CM_SDK"
+            echo "64752: CMPhoto-funnel harness built"
           else
-            echo "64752: CMPhoto build failed, falling back to ImageIO-only"
-            tail -20 cm_build.log
+            echo "64752: funnel build failed, falling back to plain ImageIO"
+            [ -f cm_build.log ] && tail -20 cm_build.log || true
             $CLANG -fsanitize=fuzzer,address,undefined -g -O1 \
               -isysroot "$SDK" \
               -framework CoreFoundation -framework CoreGraphics -framework ImageIO \
