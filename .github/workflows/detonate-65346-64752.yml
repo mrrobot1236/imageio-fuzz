@@ -30,11 +30,27 @@ jobs:
             f="/System/Library/Frameworks/${fw}.framework/${fw}"
             otool -L "$f" 2>/dev/null | head -2 || echo "$fw: not found"
           done
+          # Resolve a clang that ships the libFuzzer runtime
+          # (Apple clang on runner images is missing libclang_rt.fuzzer_osx.a)
+          CLANG=""
+          for c in /opt/homebrew/opt/llvm@15/bin/clang /opt/homebrew/opt/llvm/bin/clang /opt/homebrew/bin/clang; do
+            if [ -x "$c" ]; then CLANG="$c"; break; fi
+          done
+          if [ -z "$CLANG" ]; then
+            echo "no homebrew llvm found, installing..."
+            if command -v brew >/dev/null 2>&1; then
+              brew install llvm >/dev/null 2>&1 && CLANG="/opt/homebrew/opt/llvm/bin/clang"
+            fi
+          fi
+          [ -z "$CLANG" ] && CLANG=/usr/bin/clang
+          echo "CLANG=$CLANG" >> "$GITHUB_ENV"
+          echo "using clang: $CLANG"
+          $CLANG --version | head -1 || true
 
       - name: Build 65346 harness (native + ASan+UBSan)
         working-directory: detonation/cve-2026-65346
         run: |
-          CLANG=$(command -v clang || echo /usr/bin/clang); echo "using clang: $CLANG"; $CLANG --version | head -1
+          echo "clang: $CLANG"
           echo "clang: $CLANG"
           cp ../../harness/imageio_fuzz.m .
           $CLANG -fsanitize=fuzzer,address,undefined -g -O1 \
@@ -44,7 +60,7 @@ jobs:
       - name: Build 64752 harness (native + ASan+UBSan)
         working-directory: detonation/cve-2026-64752
         run: |
-          CLANG=$(command -v clang || echo /usr/bin/clang); echo "using clang: $CLANG"; $CLANG --version | head -1
+          echo "clang: $CLANG"
           # CMPhoto harness first; fall back to ImageIO-only if CoreMedia headers missing
           if $CLANG -fsanitize=fuzzer,address,undefined -g -O1 \
               -framework CoreFoundation -framework CoreGraphics -framework ImageIO \
