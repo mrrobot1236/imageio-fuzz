@@ -34,7 +34,7 @@ jobs:
       - name: Build 65346 harness (native + ASan+UBSan)
         working-directory: detonation/cve-2026-65346
         run: |
-          CLANG=$(ls /opt/homebrew/opt/llvm@15/bin/clang /opt/homebrew/opt/llvm/bin/clang /opt/homebrew/bin/clang clang 2>/dev/null | head -1)
+          CLANG=$(command -v clang || echo /usr/bin/clang); echo "using clang: $CLANG"; $CLANG --version | head -1
           echo "clang: $CLANG"
           cp ../../harness/imageio_fuzz.m .
           $CLANG -fsanitize=fuzzer,address,undefined -g -O1 \
@@ -44,7 +44,7 @@ jobs:
       - name: Build 64752 harness (native + ASan+UBSan)
         working-directory: detonation/cve-2026-64752
         run: |
-          CLANG=$(ls /opt/homebrew/opt/llvm@15/bin/clang /opt/homebrew/opt/llvm/bin/clang /opt/homebrew/bin/clang clang 2>/dev/null | head -1)
+          CLANG=$(command -v clang || echo /usr/bin/clang); echo "using clang: $CLANG"; $CLANG --version | head -1
           # CMPhoto harness first; fall back to ImageIO-only if CoreMedia headers missing
           if $CLANG -fsanitize=fuzzer,address,undefined -g -O1 \
               -framework CoreFoundation -framework CoreGraphics -framework ImageIO \
