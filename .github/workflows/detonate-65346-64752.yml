@@ -4,12 +4,12 @@ on:
     inputs:
       max_seconds:
         description: 'Fuzz seconds per CVE lane'
-        default: '3600'
+        default: '5400'
       asan_max_seconds:
         description: 'ASan seed-battery seconds'
         default: '600'
   push:
-    paths: ['detonation/cve-2026-65346/**', 'detonation/cve-2026-64752/**']
+    paths: ['detonation/cve-2026-65346/**', 'detonation/cve-2026-64752/**', 'harness/**']
 
 jobs:
   detonate:
@@ -18,8 +18,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-14, macos-15, macos-26-arm64]
-    timeout-minutes: 120
+        os: [macos-14, macos-15]
+        cve: ['65346', '64752']
+    timeout-minutes: 200
+    env:
+      CVE: ${{ matrix.cve }}
     steps:
       - uses: actions/checkout@v4
 
@@ -30,11 +33,10 @@ jobs:
             f="/System/Library/Frameworks/${fw}.framework/${fw}"
             otool -L "$f" 2>/dev/null | head -2 || echo "$fw: not found"
           done
-          # Resolve a clang that ships the libFuzzer runtime AND links cleanly
-          # (Apple clang lacks libclang_rt.fuzzer_osx.a; newest homebrew llvm
-          #  can hit 'ld: invalid r_symbolnum' on older images -> smoke-test all)
-          printf '%s\n' \
-            '#import <Foundation/Foundation.h>' \
+
+      - name: Resolve clang (libFuzzer smoke-test chain)
+        run: |
+          printf '%s\n'             '#import <Foundation/Foundation.h>' \
             '#import <ImageIO/ImageIO.h>' \
             'int LLVMFuzzerTestOneInput(const uint8_t *d, size_t s) { return 0; }' > /tmp/smoke.m
           tryclang() {
@@ -61,85 +63,110 @@ jobs:
           echo "using clang: $CLANG"
           $CLANG --version | head -1 || true
 
+      - name: Resolve SDKs (prefer one with CMPhoto.h)
+        run: |
+          CANDIDATES=""
+          for d in /Applications/Xcode*.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX*.sdk; do
+            [ -d "$d" ] && CANDIDATES="$CANDIDATES $d"
+          done
+          XCSDK=$(xcrun --sdk macosx --show-sdk-path 2>/dev/null || true)
+          [ -n "$XCSDK" ] && CANDIDATES="$CANDIDATES $XCSDK"
+          CANDIDATES="$CANDIDATES /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk"
+          echo "SDK candidates: $CANDIDATES"
+          CM_SDK=""
+          SDK=""
+          for s in $CANDIDATES; do
+            if [ -f "$s/System/Library/Frameworks/CoreMedia.framework/Headers/CMPhoto.h" ] \
+               || [ -f "$s/System/Library/Frameworks/CoreMedia.framework/PrivateHeaders/CMPhoto.h" ]; then
+              CM_SDK="$s"; break
+            fi
+          done
+          for s in $CANDIDATES; do
+            if [ -d "$s" ]; then SDK="$s"; break; fi
+          done
+          echo "CM_SDK=$CM_SDK" >> "$GITHUB_ENV"
+          echo "SDK=$SDK" >> "$GITHUB_ENV"
+          echo "SDK: $SDK"
+          echo "CMPhoto.h SDK: ${CM_SDK:-NONE}"
+
       - name: Build 65346 harness (native + ASan+UBSan)
+        if: matrix.cve == '65346'
         working-directory: detonation/cve-2026-65346
         run: |
           echo "clang: $CLANG"
           cp ../../harness/imageio_fuzz.m .
           $CLANG -fsanitize=fuzzer,address,undefined -g -O1 \
+            -isysroot "$SDK" \
             -framework CoreFoundation -framework CoreGraphics -framework ImageIO \
             imageio_fuzz.m -o imageio_fuzz_65346
 
-      - name: Build 64752 harness (native + ASan+UBSan)
+      - name: Build 64752 harness (CMPhoto when SDK has it, else ImageIO fallback)
+        if: matrix.cve == '64752'
         working-directory: detonation/cve-2026-64752
         run: |
-          echo "clang: $CLANG"
-          if $CLANG -fsanitize=fuzzer,address,undefined -g -O1 \
+          echo "clang: $CLANG  SDK: $SDK  CM_SDK: ${{ env.CM_SDK }}"
+          cp ../../harness/imageio_fuzz.m .
+          if [ -n "$CM_SDK" ] && $CLANG -fsanitize=fuzzer,address,undefined -g -O1 \
+              -isysroot "$CM_SDK" -DCMPHOTO_AVAILABLE \
               -framework CoreFoundation -framework CoreGraphics -framework ImageIO \
               -framework CoreMedia -framework CoreVideo \
               coremedia_fuzz.m -o imageio_fuzz_64752 2>cm_build.log; then
-            echo "64752: CMPhoto harness built"
+            echo "64752: CMPhoto harness built with -isysroot $CM_SDK"
           else
             echo "64752: CMPhoto build failed, falling back to ImageIO-only"
             tail -20 cm_build.log
-            cp ../../harness/imageio_fuzz.m ./imageio_fuzz.m
             $CLANG -fsanitize=fuzzer,address,undefined -g -O1 \
+              -isysroot "$SDK" \
               -framework CoreFoundation -framework CoreGraphics -framework ImageIO \
               imageio_fuzz.m -o imageio_fuzz_64752
           fi
 
-      - name: ASan seed battery (65346)
-        working-directory: detonation/cve-2026-65346
+      - name: Build real-corpus generator + generate real images
+        working-directory: detonation/cve-2026-${{ matrix.cve }}
         run: |
-          mkdir -p ../65346_findings ips
-          ./imageio_fuzz_65346 seeds_65346 -runs=1 \
-            -max_total_time=${{ inputs.asan_max_seconds || '600' }} \
-            -artifact_prefix=../65346_findings/ 2>&1 | tee ../65346_findings/asan_battery.log
+          mkdir -p real corpus
+          python3 ../../harness/gen_real_corpus.py real/
+          cp -a real/. corpus/
+          cp -a seeds_${CVE}/. corpus/ 2>/dev/null || true
+          echo "corpus size: $(ls corpus | wc -l) files, $(du -sh corpus | cut -f1)"
 
-      - name: ASan seed battery (64752)
-        working-directory: detonation/cve-2026-64752
+      - name: ASan seed battery (real + boundary corpus, one pass)
+        working-directory: detonation/cve-2026-${{ matrix.cve }}
         run: |
-          mkdir -p ../64752_findings
-          ./imageio_fuzz_64752 seeds_64752 -runs=1 \
+          mkdir -p out/battery
+          ./imageio_fuzz_${CVE} corpus -runs=1 \
             -max_total_time=${{ inputs.asan_max_seconds || '600' }} \
-            -artifact_prefix=../64752_findings/ 2>&1 | tee ../64752_findings/asan_battery.log
+            -max_len=8388608 \
+            -print_final_stats=1 \
+            -artifact_prefix=out/battery/ 2>&1 | tee out/battery/asan_battery.log
 
-      - name: libFuzzer campaigns (int-overflow hunt)
+      - name: libFuzzer campaign (max volume, fork=3)
+        working-directory: detonation/cve-2026-${{ matrix.cve }}
         run: |
-          mkdir -p campaign65346 campaign64752
-          cd detonation/cve-2026-65346
-          ./imageio_fuzz_65346 seeds_65346 -fork=1 \
-            -max_total_time=${{ inputs.max_seconds || '3600' }} \
+          mkdir -p out/campaign
+          ./imageio_fuzz_${CVE} corpus -fork=3 \
+            -max_total_time=${{ inputs.max_seconds || '5400' }} \
+            -max_len=8388608 -len_control=0 \
             -rss_limit_mb=4096 -timeout=25 \
-            -artifact_prefix=../../campaign65346/ 2>&1 | tee ../../campaign65346/fuzz.log || true
-          cd ../cve-2026-64752
-          ./imageio_fuzz_64752 seeds_64752 -fork=1 \
-            -max_total_time=${{ inputs.max_seconds || '3600' }} \
-            -rss_limit_mb=4096 -timeout=25 \
-            -artifact_prefix=../../campaign64752/ 2>&1 | tee ../../campaign64752/fuzz.log || true
+            -dict=${CVE}.dict \
+            -print_final_stats=1 \
+            -artifact_prefix=out/campaign/ 2>&1 | tee out/campaign/fuzz.log || true
 
       - name: Collect crash reports
         if: always()
+        working-directory: detonation/cve-2026-${{ matrix.cve }}
         run: |
-          date > /tmp/det_start
-          mkdir -p findings65346/ips findings64752/ips
+          mkdir -p out/ips
           find ~/Library/Logs/DiagnosticReports -type f \( -name "*.ips" -o -name "*imageio*" -o -name "*fuzzer*" \) \
-            -newer /tmp/det_start -exec cp {} findings65346/ips/ \; 2>/dev/null || true
-          find ~/Library/Logs/DiagnosticReports -type f \( -name "*.ips" -o -name "*imageio*" -o -name "*fuzzer*" \) \
-            -exec cp {} findings64752/ips/ \; 2>/dev/null || true
+            -exec cp {} out/ips/ \; 2>/dev/null || true
+          ls -la out/ out/campaign/ out/ips/ || true
 
       - name: Save artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: detonation-65346-64752-${{ matrix.os }}
+          name: det-${{ matrix.cve }}-${{ matrix.os }}
           path: |
-            detonation/cve-2026-65346/seeds_65346/
-            detonation/cve-2026-64752/seeds_64752/
-            65346_findings/
-            64752_findings/
-            campaign65346/
-            campaign64752/
-            findings65346/
-            findings64752/
+            detonation/cve-2026-${{ matrix.cve }}/out/
+            detonation/cve-2026-${{ matrix.cve }}/corpus/
           retention-days: 30
