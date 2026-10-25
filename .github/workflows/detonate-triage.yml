@@ -100,11 +100,11 @@ jobs:
             n=$(basename "$u")
             total=$((total+1))
             echo "=== triaging $n"
+            rc=0
             ./imageio_fuzz_64752 "$u" -runs=1 \
               -max_len=8388608 \
               -rss_limit_mb=4096 -malloc_limit_mb=4096 -timeout=25 \
-              -artifact_prefix=out/triage/ > out/triage/$n.log 2>&1
-            rc=$?
+              -artifact_prefix=out/triage/ > out/triage/$n.log 2>&1 || rc=$?
             if grep -q "out-of-memory" out/triage/$n.log; then
               ooms=$((ooms+1)); echo "  OOM reproduced"
             elif grep -q "libFuzzer: timeout" out/triage/$n.log; then

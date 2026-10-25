@@ -1,0 +1,112 @@
+name: detonate-mutate
+on:
+  workflow_dispatch:
+    inputs:
+      max_seconds:
+        description: 'Fuzz seconds'
+        default: '10200'
+  push:
+    paths: ['detonation/cve-2026-64752/mutate-seeds/**', '.github/workflows/detonate-mutate.yml']
+
+jobs:
+  mutate:
+    runs-on: macos-15
+    continue-on-error: true
+    timeout-minutes: 200
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve clang (libFuzzer smoke-test chain)
+        run: |
+          printf '%s\n' \
+            '#import <Foundation/Foundation.h>' \
+            '#import <ImageIO/ImageIO.h>' \
+            'int LLVMFuzzerTestOneInput(const uint8_t *d, size_t s) { return 0; }' > /tmp/smoke.m
+          tryclang() {
+            "$1" -fsanitize=fuzzer,address,undefined -g -O1 -x objective-c /tmp/smoke.m \
+              -framework Foundation -framework ImageIO -o /tmp/smoke.bin >/dev/null 2>&1
+          }
+          CLANG=""
+          for c in /opt/homebrew/opt/llvm@15/bin/clang /opt/homebrew/opt/llvm/bin/clang /usr/bin/clang; do
+            if [ -x "$c" ] && tryclang "$c"; then CLANG="$c"; break; fi
+          done
+          if [ -z "$CLANG" ] && command -v brew >/dev/null 2>&1; then
+            for f in llvm@18 llvm@19 llvm@20 llvm@21 llvm@22 llvm; do
+              echo "no preinstalled clang passed smoke test, trying brew install $f..."
+              brew install "$f" >/dev/null 2>&1 || continue
+              c="/opt/homebrew/opt/$f/bin/clang"
+              if [ -x "$c" ] && tryclang "$c"; then CLANG="$c"; break; fi
+            done
+          fi
+          if [ -z "$CLANG" ]; then
+            CLANG=/usr/bin/clang
+            echo "WARNING: no clang passed libFuzzer smoke test, falling back to Apple clang"
+          fi
+          echo "CLANG=$CLANG" >> "$GITHUB_ENV"
+          echo "using clang: $CLANG"
+
+      - name: Resolve SDKs
+        run: |
+          CANDIDATES=""
+          for d in /Applications/Xcode*.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX*.sdk; do
+            [ -d "$d" ] && CANDIDATES="$CANDIDATES $d"
+          done
+          XCSDK=$(xcrun --sdk macosx --show-sdk-path 2>/dev/null || true)
+          [ -n "$XCSDK" ] && CANDIDATES="$CANDIDATES $XCSDK"
+          CANDIDATES="$CANDIDATES /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk"
+          SDK=""
+          for s in $CANDIDATES; do
+            if [ -d "$s" ]; then SDK="$s"; break; fi
+          done
+          echo "SDK=$SDK" >> "$GITHUB_ENV"
+          echo "SDK: $SDK"
+
+      - name: Build 64752 harness (ImageIO->CMPhoto funnel)
+        working-directory: detonation/cve-2026-64752
+        run: |
+          cp ../../harness/imageio_fuzz.m .
+          if $CLANG -fsanitize=fuzzer,address,undefined -g -O1 \
+              -isysroot "$SDK" \
+              -framework CoreFoundation -framework CoreGraphics -framework ImageIO \
+              -framework CoreMedia -framework CoreVideo \
+              coremedia_fuzz.m -o imageio_fuzz_64752 2>cm_build.log; then
+            echo "funnel harness built"
+          else
+            echo "funnel build failed, falling back to plain ImageIO"
+            [ -f cm_build.log ] && tail -20 cm_build.log || true
+            $CLANG -fsanitize=fuzzer,address,undefined -g -O1 \
+              -isysroot "$SDK" \
+              -framework CoreFoundation -framework CoreGraphics -framework ImageIO \
+              imageio_fuzz.m -o imageio_fuzz_64752
+          fi
+
+      - name: Assemble mutation corpus (OOM units + real images)
+        working-directory: detonation/cve-2026-64752
+        run: |
+          mkdir -p corpus
+          cp -a triage-units/v2.2/. corpus/
+          ls corpus | wc -l
+          du -sh corpus
+
+      - name: Mutation campaign (fork=4, max hunt)
+        working-directory: detonation/cve-2026-64752
+        run: |
+          mkdir -p out/campaign
+          ./imageio_fuzz_64752 corpus -fork=4 \
+            -max_total_time=${{ inputs.max_seconds || '10200' }} \
+            -max_len=8388608 -len_control=0 \
+            -ignore_crashes=1 -ignore_ooms=1 -ignore_timeouts=1 \
+            -rss_limit_mb=4096 -timeout=25 \
+            -dict=64752.dict \
+            -print_final_stats=1 \
+            -artifact_prefix=out/campaign/ 2>&1 | tee out/campaign/fuzz.log || true
+
+      - name: Save artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mutate-${{ matrix.os || 'macos15' }}
+          path: |
+            detonation/cve-2026-64752/out/
+            detonation/cve-2026-64752/corpus/
+          retention-days: 30
