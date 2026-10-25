@@ -1,0 +1,126 @@
+name: detonate-triage
+on:
+  workflow_dispatch:
+  push:
+    paths: ['detonation/cve-2026-64752/triage-units/**', 'harness/**', '.github/workflows/detonate-triage.yml']
+
+jobs:
+  triage:
+    runs-on: ${{ matrix.os }}
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-14, macos-15]
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fingerprint OS + frameworks
+        run: |
+          sw_vers || true
+          for fw in ImageIO CoreMedia CoreGraphics; do
+            f="/System/Library/Frameworks/${fw}.framework/${fw}"
+            otool -L "$f" 2>/dev/null | head -2 || echo "$fw: not found"
+          done
+
+      - name: Resolve clang (libFuzzer smoke-test chain)
+        run: |
+          printf '%s\n' \
+            '#import <Foundation/Foundation.h>' \
+            '#import <ImageIO/ImageIO.h>' \
+            'int LLVMFuzzerTestOneInput(const uint8_t *d, size_t s) { return 0; }' > /tmp/smoke.m
+          tryclang() {
+            "$1" -fsanitize=fuzzer,address,undefined -g -O1 -x objective-c /tmp/smoke.m \
+              -framework Foundation -framework ImageIO -o /tmp/smoke.bin >/dev/null 2>&1
+          }
+          CLANG=""
+          for c in /opt/homebrew/opt/llvm@15/bin/clang /opt/homebrew/opt/llvm/bin/clang /usr/bin/clang; do
+            if [ -x "$c" ] && tryclang "$c"; then CLANG="$c"; break; fi
+          done
+          if [ -z "$CLANG" ] && command -v brew >/dev/null 2>&1; then
+            for f in llvm@18 llvm@19 llvm@20 llvm@21 llvm@22 llvm; do
+              echo "no preinstalled clang passed smoke test, trying brew install $f..."
+              brew install "$f" >/dev/null 2>&1 || continue
+              c="/opt/homebrew/opt/$f/bin/clang"
+              if [ -x "$c" ] && tryclang "$c"; then CLANG="$c"; break; fi
+            done
+          fi
+          if [ -z "$CLANG" ]; then
+            CLANG=/usr/bin/clang
+            echo "WARNING: no clang passed libFuzzer smoke test, falling back to Apple clang"
+          fi
+          echo "CLANG=$CLANG" >> "$GITHUB_ENV"
+          echo "using clang: $CLANG"
+          $CLANG --version | head -1 || true
+
+      - name: Resolve SDKs
+        run: |
+          CANDIDATES=""
+          for d in /Applications/Xcode*.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX*.sdk; do
+            [ -d "$d" ] && CANDIDATES="$CANDIDATES $d"
+          done
+          XCSDK=$(xcrun --sdk macosx --show-sdk-path 2>/dev/null || true)
+          [ -n "$XCSDK" ] && CANDIDATES="$CANDIDATES $XCSDK"
+          CANDIDATES="$CANDIDATES /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk"
+          SDK=""
+          for s in $CANDIDATES; do
+            if [ -d "$s" ]; then SDK="$s"; break; fi
+          done
+          echo "SDK=$SDK" >> "$GITHUB_ENV"
+          echo "SDK: $SDK"
+
+      - name: Build 64752 harness (ImageIO->CMPhoto funnel)
+        working-directory: detonation/cve-2026-64752
+        run: |
+          echo "clang: $CLANG  SDK: $SDK"
+          cp ../../harness/imageio_fuzz.m .
+          if $CLANG -fsanitize=fuzzer,address,undefined -g -O1 \
+              -isysroot "$SDK" \
+              -framework CoreFoundation -framework CoreGraphics -framework ImageIO \
+              -framework CoreMedia -framework CoreVideo \
+              coremedia_fuzz.m -o imageio_fuzz_64752 2>cm_build.log; then
+            echo "64752: funnel harness built"
+          else
+            echo "64752: funnel build failed, falling back to plain ImageIO"
+            [ -f cm_build.log ] && tail -20 cm_build.log || true
+            $CLANG -fsanitize=fuzzer,address,undefined -g -O1 \
+              -isysroot "$SDK" \
+              -framework CoreFoundation -framework CoreGraphics -framework ImageIO \
+              imageio_fuzz.m -o imageio_fuzz_64752
+          fi
+
+      - name: Triage each unit (runs=1, isolated, full stacks)
+        working-directory: detonation/cve-2026-64752
+        run: |
+          mkdir -p out/triage
+          total=0; ooms=0; timeouts=0; clean=0
+          for u in triage-units/v2.2/*; do
+            [ -f "$u" ] || continue
+            n=$(basename "$u")
+            total=$((total+1))
+            echo "=== triaging $n"
+            ./imageio_fuzz_64752 "$u" -runs=1 \
+              -max_len=8388608 \
+              -rss_limit_mb=4096 -malloc_limit_mb=4096 -timeout=25 \
+              -artifact_prefix=out/triage/ > out/triage/$n.log 2>&1
+            rc=$?
+            if grep -q "out-of-memory" out/triage/$n.log; then
+              ooms=$((ooms+1)); echo "  OOM reproduced"
+            elif grep -q "libFuzzer: timeout" out/triage/$n.log; then
+              timeouts=$((timeouts+1)); echo "  timeout reproduced"
+            else
+              clean=$((clean+1))
+            fi
+            echo "  rc=$rc, log: $(wc -l < out/triage/$n.log) lines"
+          done
+          echo "=== TRIAGE SUMMARY: $total units, $ooms ooms, $timeouts timeouts, $clean clean"
+
+      - name: Save artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: triage-${{ matrix.os }}
+          path: |
+            detonation/cve-2026-64752/out/
+          retention-days: 30
