@@ -57,8 +57,39 @@ jobs:
             CLANG=/usr/bin/clang
             echo "WARNING: no clang passed libFuzzer smoke test, falling back to Apple clang"
           fi
+          echo "CLANG=$CLANG" >> "$GITHUB_ENV"
           echo "using clang: $CLANG"
           $CLANG --version | head -1 || true
+
+      - name: Build 65346 harness (native + ASan+UBSan)
+        working-directory: detonation/cve-2026-65346
+        run: |
+          echo "clang: $CLANG"
+          cp ../../harness/imageio_fuzz.m .
+          $CLANG -fsanitize=fuzzer,address,undefined -g -O1 \
+            -framework CoreFoundation -framework CoreGraphics -framework ImageIO \
+            imageio_fuzz.m -o imageio_fuzz_65346
+
+      - name: Build 64752 harness (native + ASan+UBSan)
+        working-directory: detonation/cve-2026-64752
+        run: |
+          echo "clang: $CLANG"
+          if $CLANG -fsanitize=fuzzer,address,undefined -g -O1 \
+              -framework CoreFoundation -framework CoreGraphics -framework ImageIO \
+              -framework CoreMedia -framework CoreVideo \
+              coremedia_fuzz.m -o imageio_fuzz_64752 2>cm_build.log; then
+            echo "64752: CMPhoto harness built"
+          else
+            echo "64752: CMPhoto build failed, falling back to ImageIO-only"
+            tail -20 cm_build.log
+            cp ../../harness/imageio_fuzz.m ./imageio_fuzz.m
+            $CLANG -fsanitize=fuzzer,address,undefined -g -O1 \
+              -framework CoreFoundation -framework CoreGraphics -framework ImageIO \
+              imageio_fuzz.m -o imageio_fuzz_64752
+          fi
+
+      - name: ASan seed battery (65346)
+        working-directory: detonation/cve-2026-65346
         run: |
           mkdir -p ../65346_findings ips
           ./imageio_fuzz_65346 seeds_65346 -runs=1 \
