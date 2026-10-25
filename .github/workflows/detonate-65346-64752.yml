@@ -30,54 +30,35 @@ jobs:
             f="/System/Library/Frameworks/${fw}.framework/${fw}"
             otool -L "$f" 2>/dev/null | head -2 || echo "$fw: not found"
           done
-          # Resolve a clang that ships the libFuzzer runtime
-          # (Apple clang on runner images is missing libclang_rt.fuzzer_osx.a)
+          # Resolve a clang that ships the libFuzzer runtime AND links cleanly
+          # (Apple clang lacks libclang_rt.fuzzer_osx.a; newest homebrew llvm
+          #  can hit 'ld: invalid r_symbolnum' on older images -> smoke-test all)
+          printf '%s\n' \
+            '#import <Foundation/Foundation.h>' \
+            '#import <ImageIO/ImageIO.h>' \
+            'int LLVMFuzzerTestOneInput(const uint8_t *d, size_t s) { return 0; }' > /tmp/smoke.m
+          tryclang() {
+            "$1" -fsanitize=fuzzer,address,undefined -g -O1 -x objective-c /tmp/smoke.m \
+              -framework Foundation -framework ImageIO -o /tmp/smoke.bin >/dev/null 2>&1
+          }
           CLANG=""
-          for c in /opt/homebrew/opt/llvm@15/bin/clang /opt/homebrew/opt/llvm/bin/clang /opt/homebrew/bin/clang; do
-            if [ -x "$c" ]; then CLANG="$c"; break; fi
+          for c in /opt/homebrew/opt/llvm@15/bin/clang /opt/homebrew/opt/llvm/bin/clang /usr/bin/clang; do
+            if [ -x "$c" ] && tryclang "$c"; then CLANG="$c"; break; fi
           done
-          if [ -z "$CLANG" ]; then
-            echo "no homebrew llvm found, installing..."
-            if command -v brew >/dev/null 2>&1; then
-              brew install llvm >/dev/null 2>&1 && CLANG="/opt/homebrew/opt/llvm/bin/clang"
-            fi
+          if [ -z "$CLANG" ] && command -v brew >/dev/null 2>&1; then
+            for f in llvm@18 llvm@19 llvm@20 llvm@21 llvm@22 llvm; do
+              echo "no preinstalled clang passed smoke test, trying brew install $f..."
+              brew install "$f" >/dev/null 2>&1 || continue
+              c="/opt/homebrew/opt/$f/bin/clang"
+              if [ -x "$c" ] && tryclang "$c"; then CLANG="$c"; break; fi
+            done
           fi
-          [ -z "$CLANG" ] && CLANG=/usr/bin/clang
-          echo "CLANG=$CLANG" >> "$GITHUB_ENV"
+          if [ -z "$CLANG" ]; then
+            CLANG=/usr/bin/clang
+            echo "WARNING: no clang passed libFuzzer smoke test, falling back to Apple clang"
+          fi
           echo "using clang: $CLANG"
           $CLANG --version | head -1 || true
-
-      - name: Build 65346 harness (native + ASan+UBSan)
-        working-directory: detonation/cve-2026-65346
-        run: |
-          echo "clang: $CLANG"
-          echo "clang: $CLANG"
-          cp ../../harness/imageio_fuzz.m .
-          $CLANG -fsanitize=fuzzer,address,undefined -g -O1 \
-            -framework CoreFoundation -framework CoreGraphics -framework ImageIO \
-            imageio_fuzz.m -o imageio_fuzz_65346
-
-      - name: Build 64752 harness (native + ASan+UBSan)
-        working-directory: detonation/cve-2026-64752
-        run: |
-          echo "clang: $CLANG"
-          # CMPhoto harness first; fall back to ImageIO-only if CoreMedia headers missing
-          if $CLANG -fsanitize=fuzzer,address,undefined -g -O1 \
-              -framework CoreFoundation -framework CoreGraphics -framework ImageIO \
-              -framework CoreMedia -framework CoreVideo \
-              coremedia_fuzz.m -o imageio_fuzz_64752 2>cm_build.log; then
-            echo "64752: CMPhoto harness built"
-          else
-            echo "64752: CMPhoto build failed, falling back to ImageIO-only"
-            tail -20 cm_build.log
-            cp ../../harness/imageio_fuzz.m ./imageio_fuzz.m
-            $CLANG -fsanitize=fuzzer,address,undefined -g -O1 \
-              -framework CoreFoundation -framework CoreGraphics -framework ImageIO \
-              imageio_fuzz.m -o imageio_fuzz_64752
-          fi
-
-      - name: ASan seed battery (65346)
-        working-directory: detonation/cve-2026-65346
         run: |
           mkdir -p ../65346_findings ips
           ./imageio_fuzz_65346 seeds_65346 -runs=1 \
@@ -122,6 +103,8 @@ jobs:
         with:
           name: detonation-65346-64752-${{ matrix.os }}
           path: |
+            detonation/cve-2026-65346/seeds_65346/
+            detonation/cve-2026-64752/seeds_64752/
             65346_findings/
             64752_findings/
             campaign65346/
