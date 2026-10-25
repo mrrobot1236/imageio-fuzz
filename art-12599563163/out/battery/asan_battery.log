@@ -1,0 +1,18 @@
+INFO: Running with entropic power schedule (0xFF, 100).
+INFO: Seed: 2948377531
+INFO: Loaded 1 modules   (13 inline 8-bit counters): 13 [0x100334000, 0x10033400d), 
+INFO: Loaded 1 PC tables (13 PCs): 13 [0x100334010,0x1003340e0), 
+INFO:      208 files found in corpus
+INFO: seed corpus: files: 208 min: 49b max: 13972173b total: 55649438b rss: 48Mb
+IOServiceMatchingfailed for: AppleM2ScalerParavirtDriver
+#256	pulse  cov: 7 ft: 11 corp: 5/16Kb exec/s: 85 rss: 488Mb
+Slowest unit: 12 s:
+artifact_prefix='out/battery/'; Test unit written to out/battery/slow-unit-e96ca3df4ab650e929eb6a99eff0d00719490e58
+#386	INITED cov: 7 ft: 11 corp: 5/16Kb exec/s: 7 rss: 1290Mb
+#386	DONE   cov: 7 ft: 11 corp: 5/16Kb lim: 11438 exec/s: 7 rss: 1290Mb
+Done 386 runs in 49 second(s)
+stat::number_of_executed_units: 386
+stat::average_exec_per_sec:     7
+stat::new_units_added:          0
+stat::slowest_unit_time_sec:    12
+stat::peak_rss_mb:              1290

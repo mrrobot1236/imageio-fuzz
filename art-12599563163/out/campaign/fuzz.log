@@ -1,0 +1,96 @@
+Dictionary: 64 entries
+INFO: Running with entropic power schedule (0xFF, 100).
+INFO: Seed: 2998030974
+INFO: Loaded 1 modules   (13 inline 8-bit counters): 13 [0x1029f8000, 0x1029f800d), 
+INFO: Loaded 1 PC tables (13 PCs): 13 [0x1029f8010,0x1029f80e0), 
+INFO: -fork=3: fuzzing in separate process(s)
+INFO: -fork=3: 5 seed inputs, starting to fuzz in /var/folders/nj/vtw8zd2j31d1gdrtntc5y4600000gn/T//libFuzzerTemp.FuzzWithFork1909.dir
+#680: cov: 11 ft: 11 corp: 5 exec/s: 226 oom/timeout/crash: 0/0/0 time: 27s job: 2 dft_time: 0
+#780: cov: 12 ft: 12 corp: 6 exec/s: 25 oom/timeout/crash: 0/0/0 time: 28s job: 3 dft_time: 0
+#795: cov: 12 ft: 12 corp: 6 exec/s: 2 oom/timeout/crash: 0/0/0 time: 31s job: 1 dft_time: 0
+#66614: cov: 12 ft: 12 corp: 6 exec/s: 13163 oom/timeout/crash: 0/0/0 time: 32s job: 4 dft_time: 0
+#148255: cov: 12 ft: 12 corp: 6 exec/s: 13606 oom/timeout/crash: 0/0/0 time: 34s job: 5 dft_time: 0
+#152140: cov: 12 ft: 12 corp: 6 exec/s: 555 oom/timeout/crash: 0/0/0 time: 38s job: 6 dft_time: 0
+#155802: cov: 12 ft: 12 corp: 6 exec/s: 457 oom/timeout/crash: 0/0/0 time: 40s job: 7 dft_time: 0
+#168263: cov: 12 ft: 12 corp: 6 exec/s: 1384 oom/timeout/crash: 0/0/0 time: 43s job: 8 dft_time: 0
+#180662: cov: 17 ft: 13 corp: 7 exec/s: 1239 oom/timeout/crash: 0/0/0 time: 48s job: 9 dft_time: 0
+#180979: cov: 17 ft: 13 corp: 7 exec/s: 28 oom/timeout/crash: 0/0/0 time: 51s job: 10 dft_time: 0
+#181131: cov: 17 ft: 13 corp: 7 exec/s: 11 oom/timeout/crash: 0/0/0 time: 62s job: 12 dft_time: 0
+#181380: cov: 17 ft: 13 corp: 7 exec/s: 17 oom/timeout/crash: 0/0/0 time: 66s job: 13 dft_time: 0
+#188938: cov: 17 ft: 13 corp: 7 exec/s: 503 oom/timeout/crash: 0/0/0 time: 77s job: 14 dft_time: 0
+#194444: cov: 17 ft: 14 corp: 8 exec/s: 344 oom/timeout/crash: 0/0/0 time: 82s job: 15 dft_time: 0
+#200350: cov: 17 ft: 14 corp: 8 exec/s: 147 oom/timeout/crash: 0/0/0 time: 84s job: 11 dft_time: 0
+INFO: log from the inner process:
+Dictionary: 64 entries
+INFO: Running with entropic power schedule (0xFF, 100).
+INFO: Seed: 3042170171
+INFO: Loaded 1 modules   (13 inline 8-bit counters): 13 [0x101030000, 0x10103000d), 
+INFO: Loaded 1 PC tables (13 PCs): 13 [0x101030010,0x1010300e0), 
+INFO:        0 files found in /var/folders/nj/vtw8zd2j31d1gdrtntc5y4600000gn/T//libFuzzerTemp.FuzzWithFork1909.dir/C11
+INFO: seed corpus: files: 3 min: 196b max: 527b total: 1200b rss: 48Mb
+IOServiceMatchingfailed for: AppleM2ScalerParavirtDriver
+#7	INITED cov: 7 ft: 10 corp: 3/1200b exec/s: 0 rss: 80Mb
+#39	REDUCE cov: 7 ft: 10 corp: 3/1119b lim: 8388608 exec/s: 0 rss: 102Mb L: 115/527 MS: 1 EraseBytes-
+#90	REDUCE cov: 7 ft: 10 corp: 3/1089b lim: 8388608 exec/s: 0 rss: 113Mb L: 85/527 MS: 5 CrossOver-CopyPart-ChangeByte-CrossOver-EraseBytes-
+#143	REDUCE cov: 7 ft: 10 corp: 3/1051b lim: 8388608 exec/s: 0 rss: 165Mb L: 47/527 MS: 3 CopyPart-ChangeByte-EraseBytes-
+#285	REDUCE cov: 7 ft: 10 corp: 3/1037b lim: 8388608 exec/s: 0 rss: 248Mb L: 33/527 MS: 1 EraseBytes-
+#286	REDUCE cov: 7 ft: 10 corp: 3/1036b lim: 8388608 exec/s: 0 rss: 248Mb L: 32/527 MS: 1 EraseBytes-
+#320	REDUCE cov: 7 ft: 10 corp: 3/1029b lim: 8388608 exec/s: 0 rss: 251Mb L: 25/527 MS: 2 CopyPart-EraseBytes-
+#373	REDUCE cov: 7 ft: 10 corp: 3/1021b lim: 8388608 exec/s: 0 rss: 307Mb L: 17/527 MS: 2 ChangeBit-EraseBytes-
+#434	REDUCE cov: 7 ft: 10 corp: 3/1017b lim: 8388608 exec/s: 434 rss: 337Mb L: 13/527 MS: 1 EraseBytes-
+#449	REDUCE cov: 7 ft: 10 corp: 3/1015b lim: 8388608 exec/s: 449 rss: 366Mb L: 11/527 MS: 2 ManualDict-EraseBytes- DE: "BM"-
+#466	REDUCE cov: 7 ft: 10 corp: 3/1012b lim: 8388608 exec/s: 466 rss: 366Mb L: 8/527 MS: 2 ChangeBinInt-EraseBytes-
+#536	REDUCE cov: 8 ft: 11 corp: 4/1017b lim: 8388608 exec/s: 536 rss: 383Mb L: 5/527 MS: 2 CopyPart-EraseBytes-
+#611	REDUCE cov: 8 ft: 11 corp: 4/1016b lim: 8388608 exec/s: 611 rss: 403Mb L: 4/527 MS: 3 PersAutoDict-ManualDict-EraseBytes- DE: "BM"-"acTL"-
+#639	REDUCE cov: 8 ft: 11 corp: 4/1015b lim: 8388608 exec/s: 639 rss: 421Mb L: 3/527 MS: 1 EraseBytes-
+#645	REDUCE cov: 8 ft: 11 corp: 4/1014b lim: 8388608 exec/s: 645 rss: 421Mb L: 2/527 MS: 1 EraseBytes-
+#652	REDUCE cov: 8 ft: 11 corp: 4/1013b lim: 8388608 exec/s: 652 rss: 426Mb L: 1/527 MS: 1 EraseBytes-
+#2048	pulse  cov: 8 ft: 11 corp: 4/1013b lim: 8388608 exec/s: 1024 rss: 464Mb
+#4096	pulse  cov: 8 ft: 11 corp: 4/1013b lim: 8388608 exec/s: 682 rss: 492Mb
+ALARM: working on the last Unit for 29 seconds
+       and the timeout value is 25 (use -timeout=N to change)
+MS: 1 InsertRepeatedBytes-; base unit: d0e03149307a916dce817f109df78a52292d674e
+artifact_prefix='out/campaign/'; Test unit written to out/campaign/timeout-d365404c0b3de8d2d34afda74e0c0c1930fa4551
+==2634== ERROR: libFuzzer: timeout after 29 seconds
+    #0 0x10173e400 in __sanitizer_print_stack_trace+0x28 (libclang_rt.asan_osx_dynamic.dylib:arm64+0x5a400)
+    #1 0x1010251e0 in fuzzer::PrintStackTrace() FuzzerUtil.cpp:210
+    #2 0x10100961c in fuzzer::Fuzzer::AlarmCallback() FuzzerLoop.cpp:304
+    #3 0x1827256a0 in _sigtramp+0x34 (libsystem_platform.dylib:arm64+0x36a0)
+    #4 0x1826bc3c8 in mach_msg2_internal+0xdc (libsystem_kernel.dylib:arm64+0x133c8)
+    #5 0x1826b2760 in mach_msg_overwrite+0x1e0 (libsystem_kernel.dylib:arm64+0x9760)
+    #6 0x1826a9fa4 in mach_msg+0x14 (libsystem_kernel.dylib:arm64+0xfa4)
+    #7 0x18254eedc in _dispatch_mach_send_and_wait_for_reply+0x220 (libdispatch.dylib:arm64+0x1cedc)
+    #8 0x18254f27c in dispatch_mach_send_with_result_and_wait_for_reply+0x38 (libdispatch.dylib:arm64+0x1d27c)
+    #9 0x1823f0464 in xpc_connection_send_message_with_reply_sync+0x118 (libxpc.dylib:arm64+0xc464)
+    #10 0x192e41b64  (VideoToolbox:arm64+0x410b64)
+    #11 0x192a38f50 in VTTileDecompressionSessionDecodeTile+0x17c (VideoToolbox:arm64+0x7f50)
+    #12 0x22eaf0318  (CMPhoto:arm64+0x53318)
+    #13 0x22eb0f090  (CMPhoto:arm64+0x72090)
+    #14 0x22eb0d700  (CMPhoto:arm64+0x70700)
+    #15 0x22eb0c46c  (CMPhoto:arm64+0x6f46c)
+    #16 0x22eb08bb8  (CMPhoto:arm64+0x6bbb8)
+    #17 0x22eb54964 in CMPhotoDecompressionContainerCreateImageForIndex+0xc8 (CMPhoto:arm64+0xb7964)
+    #18 0x18e661f4c in HEIFReadPlugin::copyIOSurfaceImp(CGImageProvider*, __CFDictionary const*, __IOSurface**, __CFDictionary const**)+0x42c (ImageIO:arm64+0x14bf4c)
+    #19 0x18e6613a0 in HEIFReadPlugin::decodeImageImp(IIODecodeParameter*, IIOImageType, __IOSurface**, __CVBuffer**, CGImageBlockSet**)+0x2d4 (ImageIO:arm64+0x14b3a0)
+    #20 0x18e5d254c in IIOReadPlugin::callDecodeImage(IIODecodeParameter*, IIOImageType, __IOSurface**, __CVBuffer**, CGImageBlockSet**)+0x368 (ImageIO:arm64+0xbc54c)
+    #21 0x18e64d5e8 in IIO_Reader::CopyIOSurfaceProc(void*, CGImageProvider*, __CFDictionary const*)+0x280 (ImageIO:arm64+0x1375e8)
+    #22 0x18e5b63ac in IIOImageProviderInfo::copyIOSurface(CGImageProvider*, __CFDictionary const*)+0x150 (ImageIO:arm64+0xa03ac)
+    #23 0x18e5b40ec in IIOImageProviderInfo::CopyIOSurface(void*, CGImageProvider*, __CFDictionary const*)+0x208 (ImageIO:arm64+0x9e0ec)
+    #24 0x18e59ba10 in IIOImageSource::createThumbnailAtIndex(unsigned long, IIODictionary*, int*)+0xd6c (ImageIO:arm64+0x85a10)
+    #25 0x18e56dd34 in CGImageSourceCreateThumbnailAtIndex+0x71c (ImageIO:arm64+0x57d34)
+    #26 0x100ff0f24 in LLVMFuzzerTestOneInput coremedia_fuzz.m:45
+    #27 0x10100aad4 in fuzzer::Fuzzer::ExecuteCallback(unsigned char const*, unsigned long) FuzzerLoop.cpp:614
+    #28 0x10100a3d8 in fuzzer::Fuzzer::RunOne(unsigned char const*, unsigned long, bool, fuzzer::InputInfo*, bool, bool*) FuzzerLoop.cpp:516
+    #29 0x10100babc in fuzzer::Fuzzer::MutateAndTestOne() FuzzerLoop.cpp:760
+    #30 0x10100c8b8 in fuzzer::Fuzzer::Loop(std::__1::vector<fuzzer::SizedFile, std::__1::allocator<fuzzer::SizedFile>>&) FuzzerLoop.cpp:905
+    #31 0x100ffca18 in fuzzer::FuzzerDriver(int*, char***, int (*)(unsigned char const*, unsigned long)) FuzzerDriver.cpp:914
+    #32 0x101025bf0 in main FuzzerMain.cpp:20
+    #33 0x18234ab94  (<unknown module>)
+
+SUMMARY: libFuzzer: timeout
+stat::number_of_executed_units: 5906
+stat::average_exec_per_sec:     147
+stat::new_units_added:          15
+stat::slowest_unit_time_sec:    0
+stat::peak_rss_mb:              499
+INFO: exiting: 17920 time: 85s

@@ -1,0 +1,15 @@
+INFO: Running with entropic power schedule (0xFF, 100).
+INFO: Seed: 2964402569
+INFO: Loaded 1 modules   (13 inline 8-bit counters): 13 [0x1020880e8, 0x1020880f5), 
+INFO: Loaded 1 PC tables (13 PCs): 13 [0x1020880f8,0x1020881c8), 
+INFO:      208 files found in corpus
+INFO: seed corpus: files: 208 min: 49b max: 13972173b total: 57038754b rss: 56Mb
+IOServiceMatchingfailed for: AppleM2ScalerCSCDriver
+#393	INITED cov: 7 ft: 9 corp: 3/1020b exec/s: 65 rss: 1221Mb
+#393	DONE   cov: 7 ft: 9 corp: 3/1020b lim: 775 exec/s: 65 rss: 1221Mb
+Done 393 runs in 6 second(s)
+stat::number_of_executed_units: 393
+stat::average_exec_per_sec:     65
+stat::new_units_added:          0
+stat::slowest_unit_time_sec:    0
+stat::peak_rss_mb:              1221
