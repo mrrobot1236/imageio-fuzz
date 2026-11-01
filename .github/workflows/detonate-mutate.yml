@@ -109,6 +109,17 @@ jobs:
             -print_final_stats=1 \
             -artifact_prefix=out/campaign/ 2>&1 | tee out/campaign/fuzz.log || true
 
+      - name: Campaign summary (OOM vs timeout vs crash)
+        if: always()
+        working-directory: detonation/cve-2026-64752
+        run: |
+          c=$(ls out/campaign/ 2>/dev/null | grep -c '^crash-' || true)
+          o=$(ls out/campaign/ 2>/dev/null | grep -c '^oom-' || true)
+          t=$(ls out/campaign/ 2>/dev/null | grep -c '^timeout-' || true)
+          a=$(grep -cE 'ERROR: AddressSanitizer|heap-buffer-overflow|stack-buffer-overflow' out/campaign/fuzz.log 2>/dev/null || true)
+          echo "=== CAMPAIGN SUMMARY: crash=$c oom=$o timeout=$t asan_reports=$a"
+          grep -aE 'ERROR: AddressSanitizer|heap-buffer-overflow|stack-buffer-overflow' out/campaign/fuzz.log | head -20 || true
+
       - name: Save artifacts
         if: always()
         uses: actions/upload-artifact@v4
