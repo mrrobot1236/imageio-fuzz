@@ -1,0 +1,120 @@
+name: detonate-v5-grid
+on:
+  workflow_dispatch:
+  push:
+    paths: ['detonation/cve-2026-64752/v5-matrix/**', '.github/workflows/detonate-v5-grid.yml']
+
+jobs:
+  rss:
+    runs-on: macos-15
+    continue-on-error: true
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve clang (libFuzzer smoke-test chain)
+        run: |
+          printf '%s\n' \
+            '#import <Foundation/Foundation.h>' \
+            '#import <ImageIO/ImageIO.h>' \
+            'int LLVMFuzzerTestOneInput(const uint8_t *d, size_t s) { return 0; }' > /tmp/smoke.m
+          tryclang() {
+            "$1" -fsanitize=fuzzer,address,undefined -g -O1 -x objective-c /tmp/smoke.m \
+              -framework Foundation -framework ImageIO -o /tmp/smoke.bin >/dev/null 2>&1
+          }
+          CLANG=""
+          for c in /opt/homebrew/opt/llvm@15/bin/clang /opt/homebrew/opt/llvm/bin/clang /usr/bin/clang; do
+            if [ -x "$c" ] && tryclang "$c"; then CLANG="$c"; break; fi
+          done
+          if [ -z "$CLANG" ] && command -v brew >/dev/null 2>&1; then
+            for f in llvm@18 llvm@19 llvm@20 llvm@21 llvm@22 llvm; do
+              brew install "$f" >/dev/null 2>&1 || continue
+              c="/opt/homebrew/opt/$f/bin/clang"
+              if [ -x "$c" ] && tryclang "$c"; then CLANG="$c"; break; fi
+            done
+          fi
+          [ -z "$CLANG" ] && CLANG=/usr/bin/clang
+          echo "CLANG=$CLANG" >> "$GITHUB_ENV"
+
+      - name: Resolve SDK
+        run: |
+          SDK=""
+          for d in /Applications/Xcode*.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX*.sdk; do
+            [ -d "$d" ] && SDK="$d" && break
+          done
+          [ -z "$SDK" ] && SDK=$(xcrun --sdk macosx --show-sdk-path 2>/dev/null || true)
+          [ -z "$SDK" ] && SDK=/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk
+          echo "SDK=$SDK" >> "$GITHUB_ENV"
+
+      - name: Build 64752 harness
+        working-directory: detonation/cve-2026-64752
+        run: |
+          cp ../../harness/imageio_fuzz.m .
+          if $CLANG -fsanitize=fuzzer,address,undefined -g -O1 -isysroot "$SDK" \
+              -framework CoreFoundation -framework CoreGraphics -framework ImageIO \
+              -framework CoreMedia -framework CoreVideo \
+              coremedia_fuzz.m -o imageio_fuzz_64752 2>cm_build.log; then
+            echo "funnel harness built"
+          else
+            echo "funnel build failed, falling back to plain ImageIO"
+            tail -20 cm_build.log || true
+            $CLANG -fsanitize=fuzzer,address,undefined -g -O1 -isysroot "$SDK" \
+              -framework CoreFoundation -framework CoreGraphics -framework ImageIO \
+              imageio_fuzz.m -o imageio_fuzz_64752
+          fi
+
+      - name: Build probe harness (format ground-truth)
+        working-directory: detonation/cve-2026-64752
+        run: |
+          cp ../../harness/imageio_probe.m .
+          $CLANG -g -O1 -isysroot "$SDK" \
+            -framework CoreFoundation -framework CoreGraphics -framework ImageIO \
+            imageio_probe.m -o imageio_probe
+
+      - name: "BUILD grid corpus (gate: baseline must decode)"
+        working-directory: detonation/cve-2026-64752
+        run: |
+          mkdir -p v5-matrix out/v5
+          sips -s format heic -z 256 256 seeds_real/master.png --out /tmp/tile.heic >/dev/null
+          ls -l /tmp/tile.heic
+          python3 gen_grid.py /tmp/tile.heic v5-matrix
+          ./imageio_probe v5-matrix/baseline_grid.heic | tee out/v5/gate.txt
+          grep -q "IMG=" out/v5/gate.txt || { echo "GATE FAILED: baseline grid does not decode"; exit 1; }
+          echo "GATE PASSED"
+          ./imageio_probe v5-matrix/*.heic > out/v5/probe.txt 2>&1 || true
+          cat out/v5/probe.txt
+
+      - name: "Grid battery (rss 2048 + unlimited)"
+        working-directory: detonation/cve-2026-64752
+        run: |
+          total=0; ooms=0; crashes=0; clean=0; tos=0
+          run1() { # $1 unit $2 tag $3 rss $4 timeout
+            rc=0
+            ./imageio_fuzz_64752 "$1" -runs=1 -max_len=8388608 \
+              -rss_limit_mb=$3 -malloc_limit_mb=0 -timeout=$4 \
+              -artifact_prefix=out/v5/ > "out/v5/$2.log" 2>&1 || rc=$?
+            if grep -qE "ERROR: AddressSanitizer|heap-buffer-overflow|stack-buffer-overflow|SEGV|deadly signal" "out/v5/$2.log"; then
+              crashes=$((crashes+1)); echo "CRASH $2  <<<<<"
+            elif grep -q "out-of-memory" "out/v5/$2.log"; then
+              ooms=$((ooms+1)); echo "OOM   $2"
+            elif grep -q "libFuzzer: timeout" "out/v5/$2.log"; then
+              tos=$((tos+1)); echo "T/O   $2"
+            else
+              clean=$((clean+1)); echo "clean $2"
+            fi
+          }
+          for u in v5-matrix/*.heic; do
+            [ -f "$u" ] || continue
+            n=$(basename "$u" .heic); total=$((total+1))
+            run1 "$u" "${n}__r2048" 2048 90
+            run1 "$u" "${n}__r0" 0 240
+          done
+          echo "=== V5 GRID SUMMARY: $total units | $ooms OOM | $tos timeout | $crashes CRASH | $clean clean"
+
+      - name: Save artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v5-grid-macos15
+          path: detonation/cve-2026-64752/out/
+          retention-days: 30
