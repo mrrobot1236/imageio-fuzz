@@ -8,7 +8,7 @@ jobs:
   rss:
     runs-on: macos-15
     continue-on-error: true
-    timeout-minutes: 180
+    timeout-minutes: 300
     steps:
       - uses: actions/checkout@v4
 
@@ -63,17 +63,32 @@ jobs:
               imageio_fuzz.m -o imageio_fuzz_64752
           fi
 
-      - name: RSS-limit sweep (force commit+write, catch OOB)
+      - name: Build probe harness (format ground-truth)
+        working-directory: detonation/cve-2026-64752
+        run: |
+          cp ../../harness/imageio_probe.m .
+          $CLANG -g -O1 -isysroot "$SDK" \
+            -framework CoreFoundation -framework CoreGraphics -framework ImageIO \
+            imageio_probe.m -o imageio_probe
+
+      - name: Probe geometry/format (lies honored?)
         working-directory: detonation/cve-2026-64752
         run: |
           mkdir -p out/rss
+          ./imageio_probe rss-units/*.heic > out/rss/probe.txt 2>&1 || true
+          grep -c PROBE out/rss/probe.txt || true
+          cat out/rss/probe.txt
+
+      - name: RSS sweep (malloc_limit OFF, rss ladder)
+        working-directory: detonation/cve-2026-64752
+        run: |
           total=0; ooms=0; crashes=0; clean=0; tos=0
           run1() { # $1 unit $2 tag $3 rss $4 timeout
             rc=0
             ./imageio_fuzz_64752 "$1" -runs=1 -max_len=8388608 \
-              -rss_limit_mb=$3 -malloc_limit_mb=$3 -timeout=$4 \
+              -rss_limit_mb=$3 -malloc_limit_mb=0 -timeout=$4 \
               -artifact_prefix=out/rss/ > "out/rss/$2.log" 2>&1 || rc=$?
-            if grep -qE "ERROR: AddressSanitizer|deadly signal|SEGV|heap-buffer-overflow|stack-buffer" "out/rss/$2.log"; then
+            if grep -qE "ERROR: AddressSanitizer|heap-buffer-overflow|stack-buffer-overflow|SEGV|deadly signal" "out/rss/$2.log"; then
               crashes=$((crashes+1)); echo "CRASH $2  <<<<<"
             elif grep -q "out-of-memory" "out/rss/$2.log"; then
               ooms=$((ooms+1)); echo "OOM   $2"
@@ -86,12 +101,9 @@ jobs:
           for u in rss-units/*.heic; do
             [ -f "$u" ] || continue
             n=$(basename "$u" .heic); total=$((total+1))
-            for r in 256 512 1024; do run1 "$u" "${n}__r${r}" "$r" 40; done
-            # no-limit pass: let the buffer be fully written if it is small enough
-            prod=$(python3 -c "import struct;d=open('$u','rb').read();i=d.find(b'ispe');w,h=struct.unpack('>II',d[i+8:i+16]);print(w*h*4)" 2>/dev/null || echo 0)
-            if [ "$prod" -lt 6000000000 ] 2>/dev/null; then
-              run1 "$u" "${n}__r0" 0 90
-            fi
+            run1 "$u" "${n}__r2048" 2048 90
+            run1 "$u" "${n}__r1024" 1024 90
+            run1 "$u" "${n}__r0" 0 240
           done
           echo "=== RSS SWEEP SUMMARY: $total units | $ooms OOM | $tos timeout | $crashes CRASH | $clean clean"
 
