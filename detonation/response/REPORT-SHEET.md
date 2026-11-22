@@ -1,5 +1,9 @@
 # RESPONSE SHEET — outcome-labelled battery
 
+**Every PDF now reports by itself.** The page is a full-page link to the VM. Tap once anywhere in the preview
+and the unit id + timestamp + your IP land in /opt/zeroday/delivery/hits.jsonl. A unit that was never displayed
+produces no hit — so absence of a hit is data too. Images cannot report; they are judged by eye only.
+
 Each unit has a designed, distinguishable outcome. Send as DOCUMENT, tap, then tick what you actually saw.
 If observed ≠ expected, that is itself the finding (iOS 27 changed behaviour).
 
@@ -12,6 +16,7 @@ If observed ≠ expected, that is itself the finding (iOS 27 changed behaviour).
 | R4 | image/R4_fail_mixed_lie.heic | decode error / "cannot load" | fast / slow / blank / error / crash |
 | R5 | image/R5_fail_tile0.heic | decode error / "cannot load" | fast / slow / blank / error / crash |
 | P0 | pdf/P0_control_valid.pdf | renders preview | ok / blank / error / crash |
+| P0b | (after render) tap page once | hit logged on VM | hit yes/no |
 | P1 | pdf/P1_trunc_60pct.pdf | error or partial render | ok / blank / error / crash |
 | P2 | pdf/P2_garbage_tail.pdf | error | ok / blank / error / crash |
 | P3 | pdf/P3_noxref.pdf | error (broken xref) | ok / blank / error / crash |
