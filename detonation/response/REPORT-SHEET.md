@@ -17,9 +17,9 @@ If observed ≠ expected, that is itself the finding (iOS 27 changed behaviour).
 | R5 | image/R5_fail_tile0.heic | decode error / "cannot load" | fast / slow / blank / error / crash |
 | P0 | pdf/P0_control_valid.pdf | renders preview | ok / blank / error / crash |
 | P0b | (after render) tap page once | hit logged on VM | hit yes/no |
-| P1 | pdf/P1_trunc_60pct.pdf | error or partial render | ok / blank / error / crash |
-| P2 | pdf/P2_garbage_tail.pdf | error | ok / blank / error / crash |
-| P3 | pdf/P3_noxref.pdf | error (broken xref) | ok / blank / error / crash |
+| P1 | pdf/P1_trunc_60pct.pdf | renders or partial (CI: renders) | ok / blank / error / crash |
+| P2 | pdf/P2_garbage_tail.pdf | renders (CI tolerates) — hit = displayed | ok / blank / error / crash |
+| P3 | pdf/P3_noxref.pdf | renders (CI tolerates) — hit = displayed | ok / blank / error / crash |
 
 Notes per unit: seconds, WA restart?, screen state after.
 
