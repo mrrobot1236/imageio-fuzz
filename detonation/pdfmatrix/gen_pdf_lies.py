@@ -87,7 +87,7 @@ CASES2 = {
 }
 CASES.update(CASES2)
 
-JPEG1 = base64.b64decode("/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwcJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPDs0NDT/wAALCAABAAEBAREA/8QAFAABAAAAAAAAAAAAAAAAAAAACf/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8AKp//2Q==")
+JPEG1 = bytes.fromhex("ffd8ffe000104a46494600010100000100010000ffdb0043000a07070807060a0808080b0a0a0b0e18100e0d0d0e1d15161118231f2524221f2221262b372f26293429212230413134393b3e3e3e252e4449433c48373d3e3bffdb0043010a0b0b0e0d0e1c10101c3b2822283b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3bffc00011080040004003012200021101031101ffc4001f0000010501010101010100000000000000000102030405060708090a0bffc400b5100002010303020403050504040000017d01020300041105122131410613516107227114328191a1082342b1c11552d1f02433627282090a161718191a25262728292a3435363738393a434445464748494a535455565758595a636465666768696a737475767778797a838485868788898a92939495969798999aa2a3a4a5a6a7a8a9aab2b3b4b5b6b7b8b9bac2c3c4c5c6c7c8c9cad2d3d4d5d6d7d8d9dae1e2e3e4e5e6e7e8e9eaf1f2f3f4f5f6f7f8f9faffc4001f0100030101010101010101010000000000000102030405060708090a0bffc400b51100020102040403040705040400010277000102031104052131061241510761711322328108144291a1b1c109233352f0156272d10a162434e125f11718191a262728292a35363738393a434445464748494a535455565758595a636465666768696a737475767778797a82838485868788898a92939495969798999aa2a3a4a5a6a7a8a9aab2b3b4b5b6b7b8b9bac2c3c4c5c6c7c8c9cad2d3d4d5d6d7d8d9dae2e3e4e5e6e7e8e9eaf2f3f4f5f6f7f8f9faffda000c03010002110311003f00f2d48aa748aa448aa748bdabea65333a150624553a455224556122ae794cf6a8542348aac2454f48aac2455cd299ecd0a8469155848aa448aa748ab9a533daa150e5522ab09153d22ab091576ca67e4542a11a4556122a9122a9d22ae794cf6a854189154e915489155848ab9a533d9a1508d22ab09153d22ab091573ca67b542a1caa4553a455224556122aed94cfc8a8542348aac2454f48aac2455cd299ed50a8469155848aa448aa748ab9e533d9a150624553a455224556122ae694cf6a85439448aac2454f48aac2455db299f9150a846917b55848aa448aa748ab9a533d9a150624553a455224556122f6ae794cf6a8542348aac2454f48aac2455cd299ed50a87fffd9")
 Z = zlib.compress(RAW)
 def flt(name, data, params=b''):
     return img(w=4096, h=4096, data=b'', extra=b'/Filter /%s ' % name.encode() + params) [:0] or img(w=4096, h=4096, extra=b'/Filter /%s ' % name.encode() + params, data=data)
@@ -112,6 +112,19 @@ CASES3 = {
  'two_filter_chain':   lambda: img(w=4096, h=4096, extra=b'/Filter [/ASCII85Decode /FlateDecode] ', data=base64.a85encode(Z)),
 }
 CASES.update(CASES3)
+
+Z64 = zlib.compress(RAW)
+CASES3.update({
+ 'flate_ok64':        lambda: img(w=64, h=64, extra=b'/Filter /FlateDecode ', data=Z64),
+ 'flate_trunc64':     lambda: img(w=64, h=64, extra=b'/Filter /FlateDecode ', data=Z64[:40]),
+ 'pred12_ok64':       lambda: img(w=64, h=64, extra=b'/Filter /FlateDecode /DecodeParms << /Predictor 12 /Columns 192 >> ', data=Z64),
+ 'pred15_ok64':       lambda: img(w=64, h=64, extra=b'/Filter /FlateDecode /DecodeParms << /Predictor 15 /Columns 192 >> ', data=Z64),
+ 'pred12_cols0_64':   lambda: img(w=64, h=64, extra=b'/Filter /FlateDecode /DecodeParms << /Predictor 12 /Columns 0 >> ', data=Z64),
+ 'ccitt_64':          lambda: img(w=64, h=64, bpc=1, cs=b'/DeviceGray', extra=b'/Filter /CCITTFaxDecode /DecodeParms << /K 0 /Columns 64 /Rows 64 >> ', data=b'\x98'*120),
+ 'ccitt_short64':     lambda: img(w=64, h=64, bpc=1, cs=b'/DeviceGray', extra=b'/Filter /CCITTFaxDecode /DecodeParms << /K 0 /Columns 64 /Rows 64 >> ', data=b'\x98'*3),
+ 'dct_4096dims':      lambda: img(w=4096, h=4096, extra=b'/Filter /DCTDecode ', data=JPEG1),
+ 'dct_ok64':          lambda: img(w=64, h=64, extra=b'/Filter /DCTDecode ', data=JPEG1),
+})
 
 for n, f in CASES.items():
     open(f'{OUT}/{n}.pdf', 'wb').write(f())
