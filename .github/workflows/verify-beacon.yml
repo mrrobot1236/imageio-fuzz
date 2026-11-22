@@ -1,0 +1,37 @@
+name: verify-beacon
+on:
+  workflow_dispatch:
+  push:
+    paths: ['detonation/beacon/**', '.github/workflows/verify-beacon.yml']
+jobs:
+  b:
+    runs-on: macos-15
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build render harness
+        working-directory: detonation/cve-2026-86950
+        run: clang -O2 -o /tmp/render render.c -framework ImageIO -framework CoreGraphics -framework CoreFoundation
+      - name: Serve beacon and render
+        run: |
+          mkdir -p /tmp/srv
+          python3 - <<'P'
+          import http.server, socketserver, threading, time
+          hits=[]
+          class H(http.server.SimpleHTTPRequestHandler):
+            def __init__(self,*a,**k): super().__init__(*a,directory='/tmp/srv',**k)
+            def do_GET(self):
+              hits.append((time.strftime('%H:%M:%S'), self.path, self.headers.get('User-Agent','')[:60]))
+              self.send_response(200); self.send_header('Content-Type','image/png'); self.end_headers(); self.wfile.write(b'\x89PNG\r\n\x1a\n'+b'\0'*32)
+            def log_message(self,*a): pass
+          socketserver.TCPServer.allow_reuse_address=True
+          s=socketserver.TCPServer(('127.0.0.1',8077),H)
+          threading.Thread(target=s.serve_forever,daemon=True).start()
+          for f in ['beacon_external_xobject','beacon_openaction_uri']:
+            rc=0; subprocess=None
+            import subprocess as sp
+            p=sp.run(['/tmp/render',f'detonation/beacon/{f}.pdf'],capture_output=True,text=True); rc=p.returncode
+            time.sleep(1.5)
+            print(f'== {f} exit={rc} out={(p.stdout+p.stderr).strip()[:80]}')
+          print('HITS', hits)
+          P
