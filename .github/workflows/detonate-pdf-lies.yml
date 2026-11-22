@@ -16,7 +16,8 @@ jobs:
         run: |
           F="-g -O1 -fsanitize=address,undefined -fno-omit-frame-pointer"
           clang $F -o /tmp/render render.c -framework ImageIO -framework CoreGraphics -framework CoreFoundation
-          clang $F -o /tmp/draw detonation/../pdfmatrix/draw.c -framework CoreGraphics -framework CoreFoundation || clang $F -o /tmp/draw ../pdfmatrix/draw.c -framework CoreGraphics -framework CoreFoundation
+          clang $F -o /tmp/draw ../pdfmatrix/draw.c -framework CoreGraphics -framework CoreFoundation
+          [ -x /tmp/draw ] || { echo "draw build failed"; exit 1; }
       - name: Units
         run: |
           mkdir -p out
