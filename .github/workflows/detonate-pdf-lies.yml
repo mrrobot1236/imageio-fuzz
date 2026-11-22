@@ -42,6 +42,10 @@ jobs:
               crashes=$((crashes+1)); echo "CRASH draw_$n <<<<<"; grep -m3 -E "ERROR|SUMMARY" "out/draw_$n.log"
             else clean=$((clean+1)); fi
           done
+          echo "--- verbose probe"
+          for n in wmax whmax big8k_short imagemask_wmax smask_4k_empty pattern_huge; do
+            echo "## $n"; CG_PDF_VERBOSE=1 /tmp/render "pm/$n.pdf" 2>&1 | head -12
+          done
           echo "=== PDF-LIES: $clean clean / $crashes crash"
       - uses: actions/upload-artifact@v4
         if: always()
