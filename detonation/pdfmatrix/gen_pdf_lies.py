@@ -71,6 +71,22 @@ CASES = {
  'inline_wmax':        lambda: build(b'<< /Type /XObject /Subtype /Image /Width 1 /Height 1 /BitsPerComponent 8 /ColorSpace /DeviceRGB /Length 3 >>\nstream\nabc\nendstream',
                           content=b'q 100 0 0 100 0 0 cm BI /W 2147483647 /H 2147483647 /BPC 8 /CS /RGB ID ' + RAW[:64] + b' EI Q'),
 }
+
+CASES2 = {
+ 'big4k_short':        lambda: build(img(w=4096, h=4096, data=RAW[:4096])),
+ 'big8k_short':        lambda: build(img(w=8192, h=8192, data=RAW[:2048])),
+ 'h4k_short':          lambda: build(img(h=4096, data=RAW[:512])),
+ 'bpc16_4k_short':     lambda: build(img(w=4096, h=4096, bpc=16, data=RAW[:1024])),
+ 'smask_4k_empty':     lambda: build(img(w=4096, h=4096, data=RAW[:256]), objs_extra=[
+                          b'<< /Type /XObject /Subtype /Image /Width 4096 /Height 4096 /BitsPerComponent 8 /ColorSpace /DeviceGray /Length 0 >>\nstream\n\nendstream']),
+ 'mask_array_huge':    lambda: build(img(w=4096, h=4096, data=RAW[:64], extra=b'/Mask [0 1 0 1 0 1] ')),
+ 'imagemask_wmax':     lambda: build(img(w=0x7fffffff, h=4096, bpc=1, data=b'\xff'*64, extra=b'/ImageMask true ')),
+ 'indexed_short':      lambda: build(img(cs=b'[/Indexed /DeviceRGB 255 <000000ffffff>]', data=b'\x00\x01\x02'*10)),
+ 'decode_2elem':       lambda: build(img(extra=b'/Decode [0 1] ')),
+ 'cs_bpc_mismatch4':   lambda: build(img(bpc=4, cs=b'/DeviceRGB')),
+}
+CASES.update(CASES2)
+
 for n, f in CASES.items():
     open(f'{OUT}/{n}.pdf', 'wb').write(f())
 print('emitted', len(CASES))

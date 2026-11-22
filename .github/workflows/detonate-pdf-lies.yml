@@ -11,9 +11,12 @@ jobs:
       - uses: actions/checkout@v4
       - name: Runner
         run: sw_vers
-      - name: Build ASan render
+      - name: Build ASan harnesses
         working-directory: detonation/cve-2026-86950
-        run: clang -g -O1 -fsanitize=address,undefined -fno-omit-frame-pointer -o /tmp/render render.c -framework ImageIO -framework CoreGraphics -framework CoreFoundation
+        run: |
+          F="-g -O1 -fsanitize=address,undefined -fno-omit-frame-pointer"
+          clang $F -o /tmp/render render.c -framework ImageIO -framework CoreGraphics -framework CoreFoundation
+          clang $F -o /tmp/draw detonation/../pdfmatrix/draw.c -framework CoreGraphics -framework CoreFoundation || clang $F -o /tmp/draw ../pdfmatrix/draw.c -framework CoreGraphics -framework CoreFoundation
       - name: Units
         run: |
           mkdir -p out
@@ -30,6 +33,13 @@ jobs:
             else
               clean=$((clean+1)); echo "clean $n exit=$rc"
             fi
+          done
+          for f in pm/*.pdf; do
+            n=$(basename "$f" .pdf)
+            rc=0; /tmp/draw "$f" > "out/draw_$n.log" 2>&1 || rc=$?
+            if grep -qE "AddressSanitizer|SEGV|deadly signal|runtime error" "out/draw_$n.log"; then
+              crashes=$((crashes+1)); echo "CRASH draw_$n <<<<<"; grep -m3 -E "ERROR|SUMMARY" "out/draw_$n.log"
+            else clean=$((clean+1)); fi
           done
           echo "=== PDF-LIES: $clean clean / $crashes crash"
       - uses: actions/upload-artifact@v4
