@@ -1,0 +1,37 @@
+name: detonate-pdf-lies
+on:
+  workflow_dispatch:
+  push:
+    paths: ['detonation/pdfmatrix/**', '.github/workflows/detonate-pdf-lies.yml']
+jobs:
+  r:
+    runs-on: macos-15
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Runner
+        run: sw_vers
+      - name: Build ASan render
+        working-directory: detonation/cve-2026-86950
+        run: clang -g -O1 -fsanitize=address,undefined -fno-omit-frame-pointer -o /tmp/render render.c -framework ImageIO -framework CoreGraphics -framework CoreFoundation
+      - name: Units
+        run: |
+          mkdir -p out
+          python3 detonation/pdfmatrix/gen_pdf_lies.py pm
+          rc=0; /tmp/render pm/ok.pdf > out/gate.log 2>&1 || rc=$?
+          echo "gate exit=$rc"; cat out/gate.log
+          [ $rc -eq 0 ] || { echo "GATE FAILED"; exit 1; }
+          crashes=0; clean=0
+          for f in pm/*.pdf; do
+            n=$(basename "$f" .pdf); [ "$n" = ok ] && continue
+            rc=0; /tmp/render "$f" > "out/$n.log" 2>&1 || rc=$?
+            if grep -qE "AddressSanitizer|SEGV|deadly signal|runtime error" "out/$n.log"; then
+              crashes=$((crashes+1)); echo "CRASH $n <<<<<"; grep -m3 -E "ERROR|SUMMARY|#[0-9]" "out/$n.log" | head -5
+            else
+              clean=$((clean+1)); echo "clean $n exit=$rc"
+            fi
+          done
+          echo "=== PDF-LIES: $clean clean / $crashes crash"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: {name: pdf-lies, path: out/, retention-days: 30}
