@@ -50,7 +50,7 @@ jobs:
         run: |
           mkdir -p /tmp/corp /tmp/art
           M=detonation/cve-2026-64752/seeds_real/master.png
-          for s in 64 256 1024 2048; do
+          for s in 64 128 256; do
             for f in heic png jpeg tiff bmp; do
               sips -s format $f -z $s $s "$M" --out /tmp/corp/r_${s}.$f >/dev/null 2>&1 || true
             done
@@ -58,8 +58,8 @@ jobs:
           ls -l /tmp/corp | head -25; ls /tmp/corp | wc -l
       - name: Fuzz
         run: |
-          /tmp/imgh /tmp/corp -max_len=4000000 -len_control=0 -rss_limit_mb=4096 \
-            -malloc_limit_mb=0 -timeout=30 -fork=3 -artifact_prefix=/tmp/art/ \
+          /tmp/imgh /tmp/corp -max_len=400000 -len_control=0 -rss_limit_mb=4096 \
+            -malloc_limit_mb=0 -timeout=20 -fork=3 -artifact_prefix=/tmp/art/ \
             -max_total_time=2100 -print_final_stats=1 > /tmp/fuzz.log 2>&1 || true
           tail -40 /tmp/fuzz.log
           cp /tmp/corp/* /tmp/art/ 2>/dev/null || true
