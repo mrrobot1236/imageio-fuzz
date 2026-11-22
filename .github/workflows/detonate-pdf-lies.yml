@@ -25,14 +25,17 @@ jobs:
           rc=0; /tmp/render pm/ok.pdf > out/gate.log 2>&1 || rc=$?
           echo "gate exit=$rc"; cat out/gate.log
           [ $rc -eq 0 ] || { echo "GATE FAILED"; exit 1; }
-          crashes=0; clean=0
+          grep -q IMAGE out/gate.log && echo "gate image OK"
+          crashes=0; clean=0; rej=0
           for f in pm/*.pdf; do
             n=$(basename "$f" .pdf); [ "$n" = ok ] && continue
             rc=0; /tmp/render "$f" > "out/$n.log" 2>&1 || rc=$?
             if grep -qE "AddressSanitizer|SEGV|deadly signal|runtime error" "out/$n.log"; then
               crashes=$((crashes+1)); echo "CRASH $n <<<<<"; grep -m3 -E "ERROR|SUMMARY|#[0-9]" "out/$n.log" | head -5
+            elif grep -q "REJECTED" "out/$n.log"; then
+              rej=$((rej+1)); echo "rej $n"
             else
-              clean=$((clean+1)); echo "clean $n exit=$rc"
+              clean=$((clean+1)); echo "ok $n $(grep -m1 IMAGE "out/$n.log")"
             fi
           done
           for f in pm/*.pdf; do
@@ -46,7 +49,7 @@ jobs:
           for n in wmax whmax big8k_short imagemask_wmax smask_4k_empty pattern_huge; do
             echo "## $n"; CG_PDF_VERBOSE=1 /tmp/render "pm/$n.pdf" 2>&1 | head -12
           done
-          echo "=== PDF-LIES: $clean clean / $crashes crash"
+          echo "=== PDF-LIES: $clean decoded / $rej rejected / $crashes crash"
       - uses: actions/upload-artifact@v4
         if: always()
         with: {name: pdf-lies, path: out/, retention-days: 30}

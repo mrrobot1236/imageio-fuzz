@@ -67,7 +67,7 @@ CASES = {
  'pattern_huge':       lambda: build(img(w=0x7fffffff, h=0x7fffffff),
                           content=b'/Pattern cs /P0 scn 0 0 300 300 re f',
                           res_extra=b'/Pattern << /P0 6 0 R >> ',
-                          objs_extra=[b'<< /Type /Pattern /PatternType 1 /PaintType 1 /TilingType 1 /BBox [0 0 1 1] /XStep 1000000 /YStep 1000000 /Resources << /XObject << /Im0 4 0 R >> >> /Length 12 >>\nstream\nq 1 0 0 1 0 0 cm /Im0 Do Q\nendstream']),
+                          objs_extra=[b'<< /Type /Pattern /PatternType 1 /PaintType 1 /TilingType 1 /BBox [0 0 1 1] /XStep 1000000 /YStep 1000000 /Resources << /XObject << /Im0 4 0 R >> >> /Length 27 >>\nstream\nq 1 0 0 1 0 0 cm /Im0 Do Q\nendstream']),
  'inline_wmax':        lambda: build(b'<< /Type /XObject /Subtype /Image /Width 1 /Height 1 /BitsPerComponent 8 /ColorSpace /DeviceRGB /Length 3 >>\nstream\nabc\nendstream',
                           content=b'q 100 0 0 100 0 0 cm BI /W 2147483647 /H 2147483647 /BPC 8 /CS /RGB ID ' + RAW[:64] + b' EI Q'),
 }
