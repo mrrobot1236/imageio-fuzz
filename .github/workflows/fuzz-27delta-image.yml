@@ -16,14 +16,30 @@ jobs:
       - uses: actions/checkout@v4
       - name: Runner build
         run: sw_vers
-      - name: Resolve clang
+      - name: Resolve clang (libFuzzer smoke-test chain)
         run: |
-          printf '%s\n' '#import <Foundation/Foundation.h>' '#import <ImageIO/ImageIO.h>' 'int LLVMFuzzerTestOneInput(const uint8_t *d, size_t s) { return 0; }' > /tmp/s.m
+          printf '%s\n' \
+            '#import <Foundation/Foundation.h>' \
+            '#import <ImageIO/ImageIO.h>' \
+            'int LLVMFuzzerTestOneInput(const uint8_t *d, size_t s) { return 0; }' > /tmp/smoke.m
+          tryclang() {
+            "$1" -fsanitize=fuzzer,address,undefined -g -O1 -x objective-c /tmp/smoke.m \
+              -framework Foundation -framework ImageIO -o /tmp/smoke.bin >/dev/null 2>&1
+          }
+          CLANG=""
           for c in /opt/homebrew/opt/llvm@15/bin/clang /opt/homebrew/opt/llvm/bin/clang /usr/bin/clang; do
-            [ -x "$c" ] || continue
-            if "$c" -fsanitize=fuzzer,address,undefined -g -O1 -x objective-c /tmp/s.m -framework Foundation -framework ImageIO -o /tmp/s.bin >/dev/null 2>&1; then echo "CLANG=$c" >> "$GITHUB_ENV"; break; fi
+            if [ -x "$c" ] && tryclang "$c"; then CLANG="$c"; break; fi
           done
-          [ -n "$CLANG" ] || echo "CLANG=/usr/bin/clang" >> "$GITHUB_ENV"
+          if [ -z "$CLANG" ] && command -v brew >/dev/null 2>&1; then
+            for f in llvm@18 llvm@19 llvm@20 llvm@21 llvm@22 llvm; do
+              brew install "$f" >/dev/null 2>&1 || continue
+              c="/opt/homebrew/opt/$f/bin/clang"
+              if [ -x "$c" ] && tryclang "$c"; then CLANG="$c"; break; fi
+            done
+          fi
+          [ -z "$CLANG" ] && { echo "no fuzzer-capable clang"; exit 1; }
+          echo "CLANG=$CLANG" >> "$GITHUB_ENV"
+
       - name: Build image harness
         working-directory: detonation/cve-2026-64752
         run: |
