@@ -1,0 +1,87 @@
+name: fuzz-27delta-pdf
+on:
+  workflow_dispatch:
+  push:
+    paths: ['detonation/pdf.dict', '.github/workflows/fuzz-27delta-pdf.yml']
+
+jobs:
+  pdf:
+    strategy:
+      fail-fast: false
+      matrix:
+        lane: [1, 2, 3, 4]
+    runs-on: macos-15
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify runner is pre-patch (15.8.2 fixes the delta)
+        run: sw_vers
+      - name: Resolve clang
+        run: |
+          printf '%s\n' '#import <Foundation/Foundation.h>' '#import <ImageIO/ImageIO.h>' 'int LLVMFuzzerTestOneInput(const uint8_t *d, size_t s) { return 0; }' > /tmp/s.m
+          for c in /opt/homebrew/opt/llvm@15/bin/clang /opt/homebrew/opt/llvm/bin/clang /usr/bin/clang; do
+            [ -x "$c" ] || continue
+            if "$c" -fsanitize=fuzzer,address,undefined -g -O1 -x objective-c /tmp/s.m -framework Foundation -framework ImageIO -o /tmp/s.bin >/dev/null 2>&1; then echo "CLANG=$c" >> "$GITHUB_ENV"; break; fi
+          done
+          [ -n "$CLANG" ] || echo "CLANG=/usr/bin/clang" >> "$GITHUB_ENV"
+      - name: Build PDF render harness (CG thumbnail path)
+        working-directory: detonation/cve-2026-86950
+        run: |
+          cat > /tmp/pdfh.m <<'M'
+          #import <Foundation/Foundation.h>
+          #import <ImageIO/ImageIO.h>
+          #import <CoreGraphics/CoreGraphics.h>
+          int LLVMFuzzerTestOneInput(const uint8_t *d, size_t n) {
+            @autoreleasepool {
+              CFDataRef cf = CFDataCreate(NULL, d, n);
+              CGImageSourceRef s = CGImageSourceCreateWithData(cf, NULL);
+              if (s) {
+                NSDictionary *o = @{ (id)kCGImageSourceCreateThumbnailFromImageAlways: @YES,
+                                     (id)kCGImageSourceThumbnailMaxPixelSize: @1024 };
+                CGImageRef img = CGImageSourceCreateThumbnailAtIndex(s, 0, (__bridge CFDictionaryRef)o);
+                if (img) {
+                  size_t w = CGImageGetWidth(img), h = CGImageGetHeight(img);
+                  CGColorSpaceRef cs = CGColorSpaceCreateDeviceRGB();
+                  CGContextRef ctx = CGBitmapContextCreate(NULL, w, h, 8, w*4, cs, kCGImageAlphaPremultipliedLast);
+                  if (ctx) { CGContextDrawImage(ctx, CGRectMake(0,0,w,h), img); CGContextRelease(ctx); }
+                  CGColorSpaceRelease(cs); CGImageRelease(img);
+                }
+                CFRelease(s);
+              }
+              CFRelease(cf);
+            }
+            return 0;
+          }
+          M
+          $CLANG -fsanitize=fuzzer,address,undefined -g -O1 -o /tmp/pdfh /tmp/pdfh.m -framework Foundation -framework ImageIO -framework CoreGraphics
+      - name: Build corpus (real PDFs via cupsfilter + repo triggers)
+        run: |
+          mkdir -p /tmp/corp out
+          python3 - <<'P'
+          open('/tmp/a.txt','w').write(('Lorem ipsum dolor sit amet consectetur adipiscing elit. '*60+'\n')*40)
+          P
+          cupsfilter /tmp/a.txt > /tmp/corp/text.pdf 2>/dev/null || true
+          sips -s format png -z 300 300 detonation/cve-2026-64752/seeds_real/master.png --out /tmp/i.png >/dev/null 2>&1 || true
+          cupsfilter /tmp/i.png > /tmp/corp/img.pdf 2>/dev/null || true
+          [ -s /tmp/corp/text.pdf ] && sips -s format pdf /tmp/corp/text.pdf --out /tmp/corp/text2.pdf >/dev/null 2>&1 || true
+          cp detonation/delivery/pdf/*.pdf /tmp/corp/ 2>/dev/null || true
+          cp detonation/cve-2026-86950/*.pdf /tmp/corp/ 2>/dev/null || true
+          cp detonation/cve-2026-86950/*.ttf /tmp/corp/ 2>/dev/null || true
+          ls -l /tmp/corp | head -20
+          ls -l /tmp/corp | wc -l
+      - name: Fuzz
+        run: |
+          mkdir -p /tmp/art
+          /tmp/pdfh /tmp/corp -dict=detonation/pdf.dict -max_len=2000000 -len_control=0 \
+            -rss_limit_mb=4096 -malloc_limit_mb=0 -timeout=30 -fork=3 \
+            -artifact_prefix=/tmp/art/ -max_total_time=2100 -print_final_stats=1 \
+            > /tmp/fuzz.log 2>&1 || true
+          tail -40 /tmp/fuzz.log
+          cp /tmp/corp/* /tmp/art/ 2>/dev/null || true
+          ls -l /tmp/art | head
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pdffuzz-${{ matrix.lane }}
+          path: /tmp/art/
+          retention-days: 30

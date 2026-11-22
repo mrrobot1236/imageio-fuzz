@@ -1,0 +1,55 @@
+name: fuzz-27delta-image
+on:
+  workflow_dispatch:
+  push:
+    paths: ['.github/workflows/fuzz-27delta-image.yml']
+
+jobs:
+  img:
+    strategy:
+      fail-fast: false
+      matrix:
+        lane: [1, 2, 3, 4]
+    runs-on: macos-15
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Runner build
+        run: sw_vers
+      - name: Resolve clang
+        run: |
+          printf '%s\n' '#import <Foundation/Foundation.h>' '#import <ImageIO/ImageIO.h>' 'int LLVMFuzzerTestOneInput(const uint8_t *d, size_t s) { return 0; }' > /tmp/s.m
+          for c in /opt/homebrew/opt/llvm@15/bin/clang /opt/homebrew/opt/llvm/bin/clang /usr/bin/clang; do
+            [ -x "$c" ] || continue
+            if "$c" -fsanitize=fuzzer,address,undefined -g -O1 -x objective-c /tmp/s.m -framework Foundation -framework ImageIO -o /tmp/s.bin >/dev/null 2>&1; then echo "CLANG=$c" >> "$GITHUB_ENV"; break; fi
+          done
+          [ -n "$CLANG" ] || echo "CLANG=/usr/bin/clang" >> "$GITHUB_ENV"
+      - name: Build image harness
+        working-directory: detonation/cve-2026-64752
+        run: |
+          cp ../../harness/imageio_fuzz.m .
+          $CLANG -fsanitize=fuzzer,address,undefined -g -O1 imageio_fuzz.m -o /tmp/imgh \
+            -framework Foundation -framework ImageIO -framework CoreGraphics
+      - name: Corpus
+        run: |
+          mkdir -p /tmp/corp /tmp/art
+          M=detonation/cve-2026-64752/seeds_real/master.png
+          for s in 64 256 1024 2048; do
+            for f in heic png jpeg tiff bmp; do
+              sips -s format $f -z $s $s "$M" --out /tmp/corp/r_${s}.$f >/dev/null 2>&1 || true
+            done
+          done
+          ls -l /tmp/corp | head -25; ls /tmp/corp | wc -l
+      - name: Fuzz
+        run: |
+          /tmp/imgh /tmp/corp -max_len=4000000 -len_control=0 -rss_limit_mb=4096 \
+            -malloc_limit_mb=0 -timeout=30 -fork=3 -artifact_prefix=/tmp/art/ \
+            -max_total_time=2100 -print_final_stats=1 > /tmp/fuzz.log 2>&1 || true
+          tail -40 /tmp/fuzz.log
+          cp /tmp/corp/* /tmp/art/ 2>/dev/null || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: imgfuzz-${{ matrix.lane }}
+          path: /tmp/art/
+          retention-days: 30
