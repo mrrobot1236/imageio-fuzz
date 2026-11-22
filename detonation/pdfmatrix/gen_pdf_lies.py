@@ -126,6 +126,7 @@ CASES3.update({
  'dct_ok64':          lambda: img(w=64, h=64, extra=b'/Filter /DCTDecode ', data=JPEG1),
 })
 
+CASES.update(CASES3)
 for n, f in CASES.items():
     open(f'{OUT}/{n}.pdf', 'wb').write(f())
 print('emitted', len(CASES))
