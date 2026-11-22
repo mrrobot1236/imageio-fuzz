@@ -76,8 +76,12 @@ jobs:
         run: |
           mkdir -p bomb-matrix out/bomb
           sips -s format heic -z 256 256 seeds_real/master.png --out /tmp/tile.heic >/dev/null
-          ls -l /tmp/tile.heic
+          sips -s format heic -z 512 512 seeds_real/master.png --out /tmp/tile512.heic >/dev/null
+          sips -s format heic -z 1024 1024 seeds_real/master.png --out /tmp/tile1024.heic >/dev/null
+          ls -l /tmp/tile*.heic
           python3 gen_bomb_ladder.py /tmp/tile.heic bomb-matrix
+          python3 gen_bomb_ladder.py /tmp/tile512.heic bomb-matrix t512
+          python3 gen_bomb_ladder.py /tmp/tile1024.heic bomb-matrix t1024
           ./imageio_probe bomb-matrix/bomb_k1_32x32_32x32_1x1.heic | tee out/bomb/gate.txt
           # STRICT gate: "IMG=" alone also matches IMG=nil (v5 bug). Require real dims.
           grep -qE "IMG=[0-9]+x[0-9]+" out/bomb/gate.txt || { echo "GATE FAILED: ladder control does not decode ($(cat out/bomb/gate.txt))"; exit 1; }
