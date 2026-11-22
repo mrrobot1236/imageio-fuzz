@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Structurally valid PDFs, one lying field each, aimed at CG image-XObject decode paths."""
-import sys, os, zlib
+import sys, os, zlib, base64
 OUT = sys.argv[1] if len(sys.argv) > 1 else '.'
 os.makedirs(OUT, exist_ok=True)
 W = H = 64
@@ -86,6 +86,32 @@ CASES2 = {
  'cs_bpc_mismatch4':   lambda: build(img(bpc=4, cs=b'/DeviceRGB')),
 }
 CASES.update(CASES2)
+
+JPEG1 = base64.b64decode("/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwcJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPDs0NDT/wAALCAABAAEBAREA/8QAFAABAAAAAAAAAAAAAAAAAAAACf/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8AKp//2Q==")
+Z = zlib.compress(RAW)
+def flt(name, data, params=b''):
+    return img(w=4096, h=4096, data=b'', extra=b'/Filter /%s ' % name.encode() + params) [:0] or img(w=4096, h=4096, extra=b'/Filter /%s ' % name.encode() + params, data=data)
+CASES3 = {
+ 'flate_trunc':        lambda: img(w=4096, h=4096, extra=b'/Filter /FlateDecode ', data=Z[:40]),
+ 'flate_short_out':    lambda: img(w=4096, h=4096, extra=b'/Filter /FlateDecode ', data=zlib.compress(b'\x00')),
+ 'flate_garbage':      lambda: img(w=4096, h=4096, extra=b'/Filter /FlateDecode ', data=b'\x78\x9c'+b'\xff'*40),
+ 'flate_len_lie':      lambda: img(w=4096, h=4096, extra=b'/Filter /FlateDecode ', data=Z, decl_len=32),
+ 'dct_big_dict':       lambda: img(w=4096, h=4096, extra=b'/Filter /DCTDecode ', data=JPEG1),
+ 'dct_dict_1x1':       lambda: img(w=1, h=1, extra=b'/Filter /DCTDecode ', data=JPEG1),
+ 'dct_trunc':          lambda: img(w=1, h=1, extra=b'/Filter /DCTDecode ', data=JPEG1[:60]),
+ 'lzw_garbage':        lambda: img(w=4096, h=4096, extra=b'/Filter /LZWDecode ', data=b'\x80\x0b\x60\x50\x22\x0c\x0c\x85\x01'),
+ 'rle_overrun':        lambda: img(w=4096, h=4096, extra=b'/Filter /RunLengthDecode ', data=b'\xff\x01\x02'),
+ 'rle_eod_only':       lambda: img(w=4096, h=4096, extra=b'/Filter /RunLengthDecode ', data=b'\x80'),
+ 'ccitt_short':        lambda: img(w=4096, h=4096, bpc=1, cs=b'/DeviceGray', extra=b'/Filter /CCITTFaxDecode ', data=b'\x00'*10),
+ 'ccitt_k_neg':        lambda: img(w=4096, h=4096, bpc=1, cs=b'/DeviceGray', extra=b'/Filter /CCITTFaxDecode /DecodeParms << /K -1 /Columns 4096 /Rows 4096 >> ', data=b'\x00'*10),
+ 'ccitt_k_pos_huge':   lambda: img(w=0x7fffffff, h=4096, bpc=1, cs=b'/DeviceGray', extra=b'/Filter /CCITTFaxDecode /DecodeParms << /K 1 /Columns 2147483647 /Rows 4096 >> ', data=b'\x00'*32),
+ 'pred12_cols0':       lambda: img(w=4096, h=4096, extra=b'/Filter /FlateDecode /DecodeParms << /Predictor 12 /Columns 0 >> ', data=Z),
+ 'pred15_cols_huge':   lambda: img(w=4096, h=4096, extra=b'/Filter /FlateDecode /DecodeParms << /Predictor 15 /Columns 100000 >> ', data=Z),
+ 'pred10_bpc16':       lambda: img(w=4096, h=4096, extra=b'/Filter /FlateDecode /DecodeParms << /Predictor 10 /Columns 12288 /Colors 3 /BitsPerComponent 16 >> ', data=Z),
+ 'mask_ccitt_mismatch':lambda: img(w=4096, h=4096, extra=b'/ImageMask true /Filter /CCITTFaxDecode /DecodeParms << /Columns 1 >> ', bpc=1, cs=b'/DeviceGray', data=b'\x00'*4),
+ 'two_filter_chain':   lambda: img(w=4096, h=4096, extra=b'/Filter [/ASCII85Decode /FlateDecode] ', data=base64.a85encode(Z)),
+}
+CASES.update(CASES3)
 
 for n, f in CASES.items():
     open(f'{OUT}/{n}.pdf', 'wb').write(f())
