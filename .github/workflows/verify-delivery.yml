@@ -1,0 +1,47 @@
+name: verify-delivery
+on:
+  workflow_dispatch:
+  push:
+    paths: ['detonation/delivery/**', '.github/workflows/verify-delivery.yml']
+
+jobs:
+  verify:
+    runs-on: macos-15
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build render harness
+        working-directory: detonation/cve-2026-86950
+        run: clang -O2 -g -o /tmp/render render.c -framework ImageIO -framework CoreGraphics -framework CoreFoundation
+      - name: Verify PDFs (crash expected on P1)
+        run: |
+          mkdir -p out
+          for f in detonation/delivery/pdf/*.pdf; do
+            n=$(basename "$f" .pdf); rc=0
+            /tmp/render "$f" > "out/$n.log" 2>&1 || rc=$?
+            echo "$n exit=$rc"
+            tail -3 "out/$n.log" || true
+          done
+      - name: Verify HEIC decode + size
+        run: |
+          cat > /tmp/p.m <<'M'
+          #import <Foundation/Foundation.h>
+          #import <ImageIO/ImageIO.h>
+          int main(int c, char**v){ @autoreleasepool {
+            CGImageSourceRef s = CGImageSourceCreateWithURL((__bridge CFURLRef)[NSURL fileURLWithPath:[NSString stringWithUTF8String:v[1]]], NULL);
+            if(!s){ printf("IMG=nil\n"); return 0; }
+            CGImageRef i = CGImageSourceCreateImageAtIndex(s, 0, NULL);
+            printf("IMG=%zux%zu\n", i?CGImageGetWidth(i):0, i?CGImageGetHeight(i):0);
+          } return 0; }
+          M
+          clang -O2 -o /tmp/p /tmp/p.m -framework Foundation -framework ImageIO -framework CoreGraphics
+          /tmp/p detonation/delivery/image/WA_bomb_65k.heic | tee out/heic_probe.txt
+          grep -qE "IMG=[0-9]+x[0-9]+" out/heic_probe.txt
+          ls -l detonation/delivery/image/
+          cat detonation/delivery/MANIFEST.sha256
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: verify-delivery
+          path: out/
+          retention-days: 14
