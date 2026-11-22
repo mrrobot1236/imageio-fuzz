@@ -27,7 +27,7 @@ jobs:
           socketserver.TCPServer.allow_reuse_address=True
           s=socketserver.TCPServer(('127.0.0.1',8077),H)
           threading.Thread(target=s.serve_forever,daemon=True).start()
-          for f in ['beacon_external_xobject','beacon_openaction_uri']:
+          for f in ['beacon_external_xobject','beacon_openaction_uri','beacon.svg']:
             rc=0; subprocess=None
             import subprocess as sp
             p=sp.run(['/tmp/render',f'detonation/beacon/{f}.pdf'],capture_output=True,text=True); rc=p.returncode
