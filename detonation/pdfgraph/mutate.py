@@ -114,8 +114,8 @@ def classify(path):
     if 'AddressSanitizer' in err or 'SEGV' in err or 'deadly signal' in err or 'runtime error' in err:
         return 'CRASH', 0, hashlib.sha1(err.encode()).hexdigest()[:16], err[:400]
     if not out: return 'FAIL', 0, '0'*16, err[:200]
-    status = out[0]; painted = int(out[3]) if len(out) > 3 else 0
-    h = out[4] if len(out) > 4 else '0'*16
+    status = out[0]; painted = int(out[2]) if len(out) > 2 else 0
+    h = out[3] if len(out) > 3 else '0'*16
     return status, painted, h, ''
 
 def bucket(p):
