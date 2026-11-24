@@ -26,25 +26,7 @@ jobs:
           /tmp/hash pm/ok.pdf > out/gate.log 2>&1 || { echo GATE_FAIL; cat out/gate.log; exit 1; }
           grep -q PAINTED out/gate.log || { echo GATE_BLANK; exit 1; }
           echo "gate OK: $(cat out/gate.log)"
-          python3 - <<'PY'
-import glob, subprocess, os, shutil
-crash=0; blank=0; painted=0; fail=0
-for f in sorted(glob.glob('pm/*.pdf')):
-    if f.endswith('/ok.pdf'): continue
-    try: p = subprocess.run(['/tmp/hash', f], capture_output=True, text=True, timeout=60)
-    except subprocess.TimeoutExpired:
-        print('TIMEOUT', os.path.basename(f)); shutil.copyfile(f,'out/TIMEOUT_'+os.path.basename(f)); continue
-    e = p.stderr or ''
-    if 'AddressSanitizer' in e or 'SEGV' in e or 'deadly signal' in e or 'runtime error' in e:
-        crash+=1; print('CRASH', os.path.basename(f)); print(e[:500]); shutil.copyfile(f,'out/CRASH_'+os.path.basename(f))
-    elif p.returncode != 0 or not (p.stdout or '').strip():
-        fail+=1; print('fail', os.path.basename(f), (e.strip().splitlines() or [''])[-1][:80])
-    elif (p.stdout or '').startswith('BLANK'):
-        blank+=1; print('blank', os.path.basename(f), p.stdout.strip())
-    else:
-        painted+=1; print('painted', os.path.basename(f), p.stdout.strip())
-print(f'=== GRAPH: {painted} painted / {blank} blank / {fail} fail / {crash} crash')
-PY
+          python3 detonation/pdfgraph/classify.py pm out ok.pdf
       - name: Oracle-greedy rounds
         run: |
           SEED=$((1000 + ${{ matrix.lane }}))
