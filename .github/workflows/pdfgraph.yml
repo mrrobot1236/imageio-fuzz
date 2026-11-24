@@ -30,7 +30,7 @@ jobs:
       - name: Oracle-greedy rounds
         run: |
           SEED=$((1000 + ${{ matrix.lane }}))
-          timeout 3000 python3 detonation/pdfgraph/mutate.py pm out/m${{ matrix.lane }} 8 120 /tmp/hash || echo "mutator exit=$?"
+          python3 detonation/pdfgraph/mutate.py pm out/m${{ matrix.lane }} 8 120 /tmp/hash 2700 || echo "mutator exit=$?"
           ls out/m${{ matrix.lane }} | wc -l
       - uses: actions/upload-artifact@v4
         if: always()

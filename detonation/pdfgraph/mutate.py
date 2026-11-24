@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """Oracle-greedy structural mutator. No coverage needed: novelty = new (status, painted-bucket, hash16).
 usage: mutate.py <seeddir> <outdir> <rounds> <per_round> <harness> [log]"""
-import sys, os, re, random, subprocess, hashlib, shutil
+import sys, os, re, random, subprocess, hashlib, shutil, time
 
 seeddir, outdir, rounds, per_round, harness = sys.argv[1], sys.argv[2], int(sys.argv[3]), int(sys.argv[4]), sys.argv[5]
+budget = float(sys.argv[6]) if len(sys.argv) > 6 else 1e9
+t0 = time.time()
 os.makedirs(outdir, exist_ok=True)
 R = random.Random(int(os.environ.get('SEED', '1337')))
 OBJ = re.compile(rb'(\d+) 0 obj\n(.*?)\nendobj\n', re.S)
@@ -128,8 +130,11 @@ for s in seeds:
 print(f'# seeds={len(seeds)} baseline_classes={len(seen)}', flush=True)
 
 stats = {'CRASH': 0, 'TIMEOUT': 0, 'new': 0, 'runs': 0}
+stop = False
 for r in range(rounds):
+    if stop: break
     for k in range(per_round):
+        if time.time() - t0 > budget: stop = True; break
         src = R.choice(corpus)
         cand = mutate_once(src)
         name = f'r{r:02d}_{k:03d}'
