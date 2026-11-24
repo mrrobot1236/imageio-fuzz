@@ -18,11 +18,16 @@ def doc(objs, trailer=b'/Root 1 0 R', size_lie=0, xref_ok=True, extra_tail=b''):
     out += b'trailer\n<< /Size %d ' % (len(objs)+1+size_lie) + trailer + b' >>\nstartxref\n%d\n%%%%EOF\n' % start + extra_tail
     return out
 
+def ib(extra=b'', data=None):
+    d = RAW if data is None else data
+    return (b'<< /Type /XObject /Subtype /Image /Width 64 /Height 64 /BitsPerComponent 8 /ColorSpace /DeviceRGB '
+            + extra + b'/Length %d >>\nstream\n' % len(d) + d + b'\nendstream')
+
 def stream(data, extra=b''):
     return b'<< /Length %d %s>>\nstream\n' % (len(data), extra) + data + b'\nendstream'
 
 def base(imgextra=b'', content=b'q 200 0 0 200 50 50 cm /Im0 Do Q', pageextra=b'', imgbody=None, extra_objs=None):
-    img = imgbody if imgbody is not None else (b'<< /Type /XObject /Subtype /Image /Width 64 /Height 64 /BitsPerComponent 8 /ColorSpace /DeviceRGB ' + imgextra + stream(RAW))
+    img = imgbody if imgbody is not None else ib(imgextra)
     objs = [b'<< /Type /Catalog /Pages 2 0 R >>',
             b'<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
             b'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 300] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R ' + pageextra + b'>>',
@@ -58,15 +63,15 @@ C['q_unbalanced_close'] = lambda: doc([b'<< /Type /Catalog /Pages 2 0 R >>', b'<
 C['truncated_op'] = lambda: doc([b'<< /Type /Catalog /Pages 2 0 R >>', b'<< /Type /Pages /Kids [3 0 R] /Count 1 >>', b'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 300] /Contents 4 0 R >>', stream(b'q 200 0 0 200 50 50 cm /Im0 D')])
 C['content_len_huge'] = lambda: doc([b'<< /Type /Catalog /Pages 2 0 R >>', b'<< /Type /Pages /Kids [3 0 R] /Count 1 >>', b'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 300] /Contents 4 0 R >>', b'<< /Length 10000000 >>\nstream\nq Q\nendstream'])
 # --- filter chain graph ---
-C['filter_arr_10'] = lambda: doc(base(imgextra=b'/Filter [/FlateDecode /FlateDecode /FlateDecode /FlateDecode /FlateDecode /FlateDecode /FlateDecode /FlateDecode /FlateDecode /FlateDecode] ', imgbody=b'<< /Type /XObject /Subtype /Image /Width 64 /Height 64 /BitsPerComponent 8 /ColorSpace /DeviceRGB /Filter [/FlateDecode /FlateDecode /FlateDecode /FlateDecode /FlateDecode /FlateDecode /FlateDecode /FlateDecode /FlateDecode /FlateDecode] >>\nstream\n' + zlib.compress(RAW) + b'\nendstream'))
-C['filter_arr_empty'] = lambda: doc(base(imgbody=b'<< /Type /XObject /Subtype /Image /Width 64 /Height 64 /BitsPerComponent 8 /ColorSpace /DeviceRGB /Filter [] >>\nstream\n' + RAW + b'\nendstream'))
-C['dp_type_mismatch'] = lambda: doc(base(imgbody=b'<< /Type /XObject /Subtype /Image /Width 64 /Height 64 /BitsPerComponent 8 /ColorSpace /DeviceRGB /Filter /FlateDecode /DecodeParms [<< /Predictor 12 >>] >>\nstream\n' + zlib.compress(RAW) + b'\nendstream'))
-C['dp_dict_for_single'] = lambda: doc(base(imgbody=b'<< /Type /XObject /Subtype /Image /Width 64 /Height 64 /BitsPerComponent 8 /ColorSpace /DeviceRGB /Filter /FlateDecode /DecodeParms << /Predictor 12 /Columns 192 >> >>\nstream\n' + zlib.compress(RAW) + b'\nendstream'))
+C['filter_arr_10'] = lambda: doc(base(imgextra=b'/Filter [/FlateDecode /FlateDecode /FlateDecode /FlateDecode /FlateDecode /FlateDecode /FlateDecode /FlateDecode /FlateDecode /FlateDecode] ', imgbody=ib(extra=b'/Filter [/FlateDecode /FlateDecode /FlateDecode /FlateDecode /FlateDecode /FlateDecode /FlateDecode /FlateDecode /FlateDecode /FlateDecode] ', data=zlib.compress(RAW))))
+C['filter_arr_empty'] = lambda: doc(base(imgbody=ib(extra=b'/Filter [] ')))
+C['dp_type_mismatch'] = lambda: doc(base(imgbody=ib(extra=b'/Filter /FlateDecode /DecodeParms [<< /Predictor 12 >>] ', data=zlib.compress(RAW))))
+C['dp_dict_for_single'] = lambda: doc(base(imgbody=ib(extra=b'/Filter /FlateDecode /DecodeParms << /Predictor 12 /Columns 192 >> ', data=zlib.compress(RAW))))
 # --- form / xobject graph ---
 C['form_self_recursive'] = lambda: doc([b'<< /Type /Catalog /Pages 2 0 R >>', b'<< /Type /Pages /Kids [3 0 R] /Count 1 >>', b'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 300] /Resources << /XObject << /Fm0 4 0 R >> >> /Contents 5 0 R >>', b'<< /Type /XObject /Subtype /Form /BBox [0 0 100 100] /Resources << /XObject << /Fm0 4 0 R >> >> /Length 10 >>\nstream\n/Fm0 Do Q\nendstream', stream(b'q /Fm0 Do Q')])
 C['form_chain_64'] = lambda: doc([b'<< /Type /Catalog /Pages 2 0 R >>', b'<< /Type /Pages /Kids [3 0 R] /Count 1 >>', b'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 300] /Resources << /XObject << /Fm0 4 0 R >> >> /Contents 70 0 R >>'] + [b'<< /Type /XObject /Subtype /Form /BBox [0 0 100 100] /Resources << /XObject << /Fm%d 4 0 R >> >> /Length 9 >>\nstream\n/Fm%d Do \nendstream' % (i+1, i+1) for i in range(64)] + [stream(b'q /Fm0 Do Q')])
 C['xobj_as_page_content'] = lambda: doc([b'<< /Type /Catalog /Pages 2 0 R >>', b'<< /Type /Pages /Kids [3 0 R] /Count 1 >>', b'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 300] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 4 0 R >>', stream(b'q 10 0 0 10 0 0 cm /Im0 Do Q')])
-C['subtype_missing_img'] = lambda: doc(base(imgbody=b'<< /Type /XObject /Width 64 /Height 64 /BitsPerComponent 8 /ColorSpace /DeviceRGB >>\nstream\n' + RAW + b'\nendstream'))
+C['subtype_missing_img'] = lambda: doc(base(imgbody=b'<< /Type /XObject /Width 64 /Height 64 /BitsPerComponent 8 /ColorSpace /DeviceRGB /Length %d >>\nstream\n' % len(RAW) + RAW + b'\nendstream'))
 # --- nesting / array depth ---
 C['nested_arr_500'] = lambda: doc(base(imgextra=b'/Decode [' + b'['*500 + b'0 1' + b']'*500 + b'] '))
 C['nested_dict_200'] = lambda: doc(base(imgextra=b'/Foo ' + b'<< /A '*200 + b'1' + b' >>'*200 + b' '))
